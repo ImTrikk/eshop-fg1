@@ -1,0 +1,14 @@
+{
+    "name": "trikk/eshop-fg1",
+    "autoload": {
+        "psr-4": {
+            "EshopFg1\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "EshopFg1"
+        }
+    ],
+    "require": {}
+}
