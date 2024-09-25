@@ -10,5 +10,7 @@
             "name": "EshopFg1"
         }
     ],
-    "require": {}
+    "require": {
+        "firebase/php-jwt": "^6.10"
+    }
 }
