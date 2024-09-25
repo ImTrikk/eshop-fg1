@@ -8,7 +8,7 @@ try {
     echo "Database connection successful!\n";
 } catch (PDOException $e) {
     echo "Database connection failed: " . $e->getMessage();
-    exit;
+    exit;   
 }
 
 // Define the base URL for the API
@@ -65,4 +65,3 @@ if ($matched_route) {
     http_response_code(404);
     echo json_encode(['error' => 'Route not found']);
 }
-?>
