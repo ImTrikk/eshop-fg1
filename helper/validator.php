@@ -64,6 +64,13 @@ function validateUser($data) {
  return $errors;
 }
 
+function validateEmail($email){
+  $errors = [];
+
+  
+
+}
+
 // Helper function to validate date format (YYYY-MM-DD)
 function validateDate($date) {
     $d = DateTime::createFromFormat('Y-m-d', $date);

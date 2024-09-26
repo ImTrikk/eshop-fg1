@@ -5,6 +5,8 @@ require 'database/database.php';
 require 'helper/validator.php';
 require 'helper/token.php';
 
+require_once(__DIR__ . '/../database/models/userModel.php');
+
 function register($pdo) {
  try{
   // Check if the form is submitted via POST request
@@ -87,43 +89,54 @@ function login($pdo) {
 
     // Basic validation
     if (empty($email) || empty($password)) {
-        http_response_code(400); // Bad Request
-        echo json_encode(["error" => "Email and password are required!"]);
-        return;
+      http_response_code(400); // Bad Request
+      echo json_encode(["error" => "Email and password are required!"]);
+      return;
     }
 
-    // Prepare SQL statement to get user by email
-    $sql = "SELECT email, password, first_name, last_name, user_id, role_id FROM users WHERE email = :email";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([':email' => $email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Initialize UserModel
+    $userModel = new userModel(pdo: $pdo);
+
+    // Fetch user by email
+    $user = $userModel->getUserByEmail($email);
 
     // Verify password
     if ($user && password_verify($password, $user['password'])) {
-      // Generate token (make sure your `generateToken` function is correctly implemented)
-      $token = generateToken($user['user_id'], 'your_secret_key'); // Replace 'your_secret_key' with the actual secret key
+      // Fetch additional user data (excluding the password)
+      $userData = $userModel->getUserData($email);
 
-      // Remove sensitive data (like password) before returning user info
+      // Generate token (assuming you have a function called generateToken)
+      $secretKey = "posdkopk";
+
+      $token = generateToken($userData['user_id'], $secretKey);
+
+      // Remove sensitive data (like password) from user data before returning it
+      unset($userData['password']);
       unset($user['password']);
 
-      header("Set-Cookie" )  ;
+      // Set token as a cookie (if needed)
+      setcookie('auth_token', $token, [
+        'expires' => time() + (5 * 60 * 60), // 5 hours
+        'httponly' => true, // Ensures the cookie is only sent over HTTP(S)
+        'samesite' => 'Strict' // Helps prevent CSRF attacks
+      ]);
 
-      // Successful login
+      // Successful login response
       http_response_code(200); // OK
       echo json_encode([
           "message" => "Login successful!",
-          "user" => $user,
+          "user" => $userData,
           "token" => $token
-      ]); 
+      ]);
     } else {
       // Failed login
       http_response_code(401); // Unauthorized
       echo json_encode(["error" => "Invalid email or password!"]);
     }
   } else {
-      // Method not allowed
-      http_response_code(405); // Method Not Allowed
-      echo json_encode(["error" => "Invalid request method!"]);
+    // Method not allowed
+    http_response_code(405); // Method Not Allowed
+    echo json_encode(["error" => "Invalid request method!"]);
   }
 }
 
