@@ -29,7 +29,7 @@ $routes = [
     ],
     'POST' => [
         '/user-create' => 'register',
-        '/user-login' => 'login',
+        '/user-login' => 'login'
     ],
     'PUT' => [
         '/users/{id}' => 'updateUser',
