@@ -10,8 +10,19 @@
 
  // Function to get user by email
 
- public function  registerUser($request){
-
+ public function  registerUser($userData){
+    $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
+      VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
+  $stmt = $this->pdo->prepare($sql);
+  $stmt->execute([
+          ':first_name' => $userData['firstName'],
+          ':last_name' => $userData['lastName'],
+          ':contacts' => $userData['contacts'],
+          ':email' => $userData['email'],
+          ':password' => $userData['hashedPassword'],
+          ':date_of_birth' => $userData['dateOfBirth'], 
+          ':role_id' => $userData['roleId']
+        ]);
  }
 
  public function getUserByEmail($email) {
@@ -28,8 +39,21 @@
   return $stmt->fetch(PDO::FETCH_ASSOC);
  }
 
+ public function getUserCart($email){
+  $sql = "SELECT crt.cart_id, prod.product_name, prod.price, crt.quantity
+          from 
+           cart crt 
+               inner join products prod on prod.product_id = crt.product_id
+               inner join users usr on usr.user_id = crt.user_id
+               inner join roles rl on rl.role_id = usr.role_id and email = :email";
+
+  $stmt = $this->pdo->prepare($sql);
+  $stmt->execute([':email' => $email]);
+  return $stmt->fetch(PDO::FETCH_ASSOC);
+ }
+
  public function storeToken($email, $token){
-  
+
  }
 
  public function destroyToken(){
