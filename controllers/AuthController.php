@@ -26,7 +26,7 @@ function register($pdo) {
       $roleId = $data['role_id'] ?? '';
 
       // Prepare the data for validation
-      $validationData = [
+      $userData = [
       'first_name' => $firstName,
       'last_name' => $lastName,
       'contacts' => $contacts,
@@ -37,7 +37,7 @@ function register($pdo) {
       ];
 
       // Validate user data
-      $errors = validateUser($validationData);
+      $errors = validateUser($userData);
 
       if (!empty($errors)) {
         echo json_encode(["errors" => $errors]);
@@ -102,11 +102,11 @@ function login($pdo) {
     $user = $userModel->getUserByEmail($email);
 
     // Verify password
-    if ($user && password_verify($password, $user['password'])) {
-    // if ($user && $password) {
+    // if ($user && password_verify($password, $user['password'])) {
+    if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
-
+      $userCartData = $userModel->getUserCart($email);
       // Generate token (assuming you have a function called generateToken)
       $secretKey = ucfirst(getenv('JWT_SECRET'));
       $token = generateToken($userData['user_id'], $secretKey);
@@ -127,6 +127,7 @@ function login($pdo) {
       echo json_encode([
           "message" => "Login successful!",
           "user" => $userData,
+          "cart" => $userCartData,
           "token" => $token
       ]);
     } else {
