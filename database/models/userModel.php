@@ -22,7 +22,7 @@
  }
 
  public function getUserData($email){
-  $sql = "SELECT email, password, user_id FROM users WHERE email = :email";
+  $sql = "SELECT user_id, email, first_name, last_name, contacts FROM users WHERE email = :email";
   $stmt = $this->pdo->prepare($sql);
   $stmt->execute([':email' => $email]);
   return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -30,5 +30,9 @@
 
  public function storeToken($email, $token){
   
+ }
+
+ public function destroyToken(){
+
  }
 }

@@ -20,10 +20,12 @@ function generateToken($userId, $secretKey){
  return JWT::encode($payload, $secretKey, 'HS256');
 }
 
-function verifyToken($token, $key){
+function verifyToken($token){
   try{
 
-   $decoded = JWT::decode($token, new Key($key, 'HS256'));
+  $secret_key = ucfirst(getenv('JWT_SECRET'));  
+
+   $decoded = JWT::decode($token, new Key($secret_key, 'HS256'));
 
    print_r($decoded);
 
