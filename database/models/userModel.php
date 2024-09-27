@@ -10,19 +10,21 @@
 
  // Function to get user by email
 
- public function  registerUser($userData){
+ public function  registerUser($userData, $hashedPassword){
     $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
       VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
-  $stmt = $this->pdo->prepare($sql);
-  $stmt->execute([
-          ':first_name' => $userData['firstName'],
-          ':last_name' => $userData['lastName'],
-          ':contacts' => $userData['contacts'],
-          ':email' => $userData['email'],
-          ':password' => $userData['hashedPassword'],
-          ':date_of_birth' => $userData['dateOfBirth'], 
-          ':role_id' => $userData['roleId']
-        ]);
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([
+        ':first_name' => $userData['first_name'],
+        ':last_name' => $userData['last_name'],
+        ':contacts' => $userData['contacts'],
+        ':email' => $userData['email'],
+        ':password' => $hashedPassword,
+        ':date_of_birth' => $userData['date_of_birth'], 
+        ':role_id' => $userData['role_id']
+    ]);
+
+    return $stmt->fetch(PDO::FETCH_ASSOC);
  }
 
  public function getUserByEmail($email) {

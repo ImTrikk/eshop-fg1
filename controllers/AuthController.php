@@ -47,21 +47,9 @@ function register($pdo) {
       // Hash the password for security
       $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-      // Prepare the SQL statement to insert the user data
-      $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
-      VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
-
       try {
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-          ':first_name' => $firstName,
-          ':last_name' => $lastName,
-          ':contacts' => $contacts,
-          ':email' => $email,
-          ':password' => $hashedPassword,
-          ':date_of_birth' => $dateOfBirth,
-          ':role_id' => $roleId
-        ]);
+        $userModel = new userModel(pdo: $pdo);
+        $userModel->registerUser($userData, $hashedPassword);
 
         http_response_code(201);
         echo json_encode(["message" => "User registered successfully!"]);
@@ -102,8 +90,8 @@ function login($pdo) {
     $user = $userModel->getUserByEmail($email);
 
     // Verify password
-    // if ($user && password_verify($password, $user['password'])) {
-    if ($user && $password) {
+    if ($user && password_verify($password, $user['password'])) {
+    // if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
       $userCartData = $userModel->getUserCart($email);
