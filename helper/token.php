@@ -7,14 +7,14 @@ use \Firebase\JWT\Key;
 
 function generateToken($userId, $secretKey){ 
 
- $expirationTime = 3600;
+ $expirationTime = 3600 * 3;
 
  $issuedAt = time();
  $expirationTime = $issuedAt + $expirationTime;
  $payload = [
-  'iat' => $issuedAt, // Issued at
-  'exp' => $expirationTime, // Expiration time
-  'userId' => $userId // User identifier
+  'iat' => $issuedAt, 
+  'exp' => $expirationTime,
+  'userId' => $userId 
  ];
 
  return JWT::encode($payload, $secretKey, 'HS256');

@@ -61,7 +61,6 @@ function register($pdo) {
   } catch(PDOException $e){
     http_response_code(500);
     echo json_encode(["error" => "Internal Server Error " . $e->getMessage()]);
-
   }
 }
 
@@ -99,15 +98,16 @@ function login($pdo) {
       $secretKey = ucfirst(getenv('JWT_SECRET'));
       $token = generateToken($userData['user_id'], $secretKey);
 
-      // Remove sensitive data (like password) from user data before returning it
       unset($userData['password']);
       unset($user['password']);
 
-      // Set token as a cookie (if needed)
-      setcookie('auth_token', $token, [
-        'expires' => time() + (5 * 60 * 60), // 5 hours
-        'httponly' => true, // Ensures the cookie is only sent over HTTP(S)
-        'samesite' => 'Strict' // Helps prevent CSRF attacks
+      //storing token 
+      $userModel->storeToken($userData['user_id'], $token );
+
+      setcookie('access_token', $token, [
+      'expires' => time() + (3 * 60 * 60), // 3 hours
+      'httponly' => true,                  // Ensures the cookie is only sent over HTTP(S)
+      'samesite' => 'Strict'               // Helps prevent CSRF attacks
       ]);
 
       // Successful login response
@@ -130,6 +130,9 @@ function login($pdo) {
   }
 }
 
+function forgotPassword($pdo){
+
+}
 
 function logout($user_id) {
   // Handle logout logic, e.g., clearing session data
