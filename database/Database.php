@@ -1,20 +1,31 @@
 <?php
 
-// Database credentials
-$host = 'localhost';  // Change this if you're connecting to a remote server
-$dbname = 'eshop-fg1'; // Replace with your database name
-$username = 'root';  // Replace with your MySQL username
-$password = '';  // Replace with your MySQL password
-$charset = 'utf8mb4'; // Charset, utf8mb4 is commonly used for better Unicode support
+// Include the Composer autoload
+require 'vendor/autoload.php';
 
+// Correct Dotenv Loader usage
+use Dotenv\Loader;
 
+// Create an instance of the Loader and pass the path to the .env file
+$loader = new Loader(__DIR__ . '/../.env');
+
+// Load the variables into the environment
+$loader->load(); // This loads the .env variables into PHP's environment
+
+// Now, you can access the environment variables with getenv()
+$host = getenv('HOST');
+$dbname = getenv('DB_NAME');
+$username = getenv('USER_NAME');
+$password = getenv('PASSWORD');
+$charset = getenv('CHARSET');
+
+// PDO configuration for database connection
 $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
 
-// PDO options
 $options = [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Enable exceptions on errors
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // Set default fetch mode to associative arrays
-    PDO::ATTR_EMULATE_PREPARES => false, // Disable emulation of prepared statements
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
 try {
@@ -22,6 +33,6 @@ try {
     $pdo = new PDO($dsn, $username, $password, $options);
     echo "Database connection successful!";
 } catch (PDOException $e) {
-    // Handle any errors
+    // Catch and display any connection errors
     echo "Database connection failed: " . $e->getMessage();
 }

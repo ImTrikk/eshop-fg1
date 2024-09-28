@@ -47,21 +47,9 @@ function register($pdo) {
       // Hash the password for security
       $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-      // Prepare the SQL statement to insert the user data
-      $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
-      VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
-
       try {
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-          ':first_name' => $firstName,
-          ':last_name' => $lastName,
-          ':contacts' => $contacts,
-          ':email' => $email,
-          ':password' => $hashedPassword,
-          ':date_of_birth' => $dateOfBirth,
-          ':role_id' => $roleId
-        ]);
+        $userModel = new userModel(pdo: $pdo);
+        $userModel->registerUser($userData, $hashedPassword);
 
         http_response_code(201);
         echo json_encode(["message" => "User registered successfully!"]);
@@ -73,7 +61,6 @@ function register($pdo) {
   } catch(PDOException $e){
     http_response_code(500);
     echo json_encode(["error" => "Internal Server Error " . $e->getMessage()]);
-
   }
 }
 
@@ -102,8 +89,8 @@ function login($pdo) {
     $user = $userModel->getUserByEmail($email);
 
     // Verify password
-    // if ($user && password_verify($password, $user['password'])) {
-    if ($user && $password) {
+    if ($user && password_verify($password, $user['password'])) {
+    // if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
       $userCartData = $userModel->getUserCart($email);
@@ -111,15 +98,16 @@ function login($pdo) {
       $secretKey = ucfirst(getenv('JWT_SECRET'));
       $token = generateToken($userData['user_id'], $secretKey);
 
-      // Remove sensitive data (like password) from user data before returning it
       unset($userData['password']);
       unset($user['password']);
 
-      // Set token as a cookie (if needed)
-      setcookie('auth_token', $token, [
-        'expires' => time() + (5 * 60 * 60), // 5 hours
-        'httponly' => true, // Ensures the cookie is only sent over HTTP(S)
-        'samesite' => 'Strict' // Helps prevent CSRF attacks
+      //storing token 
+      $userModel->storeToken($userData['user_id'], $token );
+
+      setcookie('access_token', $token, [
+      'expires' => time() + (3 * 60 * 60), // 3 hours
+      'httponly' => true,                  // Ensures the cookie is only sent over HTTP(S)
+      'samesite' => 'Strict'               // Helps prevent CSRF attacks
       ]);
 
       // Successful login response
@@ -142,6 +130,9 @@ function login($pdo) {
   }
 }
 
+function forgotPassword($pdo){
+
+}
 
 function logout($user_id) {
   // Handle logout logic, e.g., clearing session data

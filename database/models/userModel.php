@@ -10,20 +10,22 @@
 
  // Function to get user by email
 
- public function  registerUser($userData){
+public function registerUser($userData, $hashedPassword) {
     $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
-      VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
-  $stmt = $this->pdo->prepare($sql);
-  $stmt->execute([
-          ':first_name' => $userData['firstName'],
-          ':last_name' => $userData['lastName'],
-          ':contacts' => $userData['contacts'],
-          ':email' => $userData['email'],
-          ':password' => $userData['hashedPassword'],
-          ':date_of_birth' => $userData['dateOfBirth'], 
-          ':role_id' => $userData['roleId']
-        ]);
- }
+            VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([
+        ':first_name' => $userData['first_name'],
+        ':last_name' => $userData['last_name'],
+        ':contacts' => $userData['contacts'],
+        ':email' => $userData['email'],
+        ':password' => $hashedPassword,
+        ':date_of_birth' => $userData['date_of_birth'], 
+        ':role_id' => $userData['role_id']
+    ]);
+
+    return $this->pdo->lastInsertId(); // Return the ID of the new user
+}
 
  public function getUserByEmail($email) {
   $sql = "SELECT email, password FROM users WHERE email = :email";
@@ -52,9 +54,21 @@
   return $stmt->fetch(PDO::FETCH_ASSOC);
  }
 
- public function storeToken($email, $token){
+public function storeToken($user_id, $token) {
+    $sql = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
+            VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)";
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute([
+        ':user_id' => $user_id,
+        ':token' => $token,
+        ':token_type' => 'bearer',  // Assuming bearer token
+        ':issued_at' => date('Y-m-d H:i:s'),
+        ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),  // 3-hour expiry time
+        ':is_valid' => 1,  // Token is valid by default
+        ':email_verified' => 1  // Assuming the email is verified by default
+    ]);
+}
 
- }
 
  public function destroyToken(){
 
