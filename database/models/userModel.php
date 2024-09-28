@@ -55,19 +55,27 @@ public function registerUser($userData, $hashedPassword) {
  }
 
 public function storeToken($user_id, $token) {
-    $sql = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
-            VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)";
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute([
-        ':user_id' => $user_id,
-        ':token' => $token,
-        ':token_type' => 'bearer',  // Assuming bearer token
-        ':issued_at' => date('Y-m-d H:i:s'),
-        ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),  // 3-hour expiry time
-        ':is_valid' => 1,  // Token is valid by default
-        ':email_verified' => 1  // Assuming the email is verified by default
-    ]);
+  print_r($user_id);
+    try {
+        $sql = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
+                VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':user_id' => $user_id,
+            ':token' => $token,
+            ':token_type' => 'JWT',  // Assuming bearer token
+            ':issued_at' => date('Y-m-d H:i:s'),
+            ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),  // 3-hour expiry time
+            ':is_valid' => 1,  // Token is valid by default
+            ':email_verified' => 1  // Assuming the email is verified
+        ]);
+    } catch (PDOException $e) {
+        // Log the error message for debugging
+        error_log('Error inserting token: ' . $e->getMessage());
+        throw $e;
+    }
 }
+
 
 
  public function destroyToken(){
