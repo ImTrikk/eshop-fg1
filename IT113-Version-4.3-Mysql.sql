@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS user_tokens (
     is_valid BOOLEAN DEFAULT TRUE, -- Indicates if the token is still valid
     email_verified BOOLEAN DEFAULT FALSE, -- Tracks email confirmation (used for 'EMAIL_VERIFICATION')
     CHECK (token_type IN ('JWT', 'EMAIL_VERIFICATION')),
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE   
 );
 
 -- Product Catalog and Attributes for Clothing Store
