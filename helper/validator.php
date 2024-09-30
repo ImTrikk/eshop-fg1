@@ -19,6 +19,7 @@ function validateUser($data) {
  }
 
  // Validate email
+//  
  if (empty($data['email'])) {
    $errors[] = 'Email is required.';
  } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
@@ -66,9 +67,6 @@ function validateUser($data) {
 
 function validateEmail($email){
   $errors = [];
-
-  
-
 }
 
 // Helper function to validate date format (YYYY-MM-DD)

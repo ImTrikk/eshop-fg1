@@ -1,7 +1,6 @@
 <?php
 // index.php
 
-
 // Define the base URL for the API
 $base_url = '/eshop-fg1/api';
 
@@ -9,9 +8,10 @@ $base_url = '/eshop-fg1/api';
 $request_uri = strtok(str_replace($base_url, '', $_SERVER['REQUEST_URI']), '?');
 $request_method = $_SERVER['REQUEST_METHOD'];
 
-// Include the file with your handler functions
-require_once 'controllers/AuthController.php';
-require_once 'controllers/productController.php';
+// Include the file with your middleware and handler functions
+require_once 'middleware/middleware.php';   // Middleware for token validation
+require_once 'controllers/AuthController.php';  // User-related handlers
+require_once 'controllers/productController.php';  // Product-related handlers
 
 // Define available routes
 $routes = [
@@ -47,10 +47,17 @@ foreach ($routes[$request_method] as $route => $handler) {
     }
 }
 
-// Call the appropriate function or return 404
 if ($matched_route) {
     if (function_exists($matched_route)) {
-        call_user_func_array($matched_route, [$pdo]);
+        // Check if the route is protected and requires a token (Add more routes as needed)
+        $protected_routes = ['/get-user-cart'];
+
+        if (in_array($request_uri, $protected_routes)) {
+            checkAuthToken($pdo);  // Middleware to check for Bearer token
+        }
+
+        // Call the handler function
+        call_user_func_array($matched_route, array_merge([$pdo], $matches));
     } else {
         http_response_code(500);
         echo json_encode(['error' => 'Handler not defined']);

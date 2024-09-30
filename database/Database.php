@@ -28,6 +28,8 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
+global $pdo;
+
 try {
     // Create PDO instance
     $pdo = new PDO($dsn, $username, $password, $options);

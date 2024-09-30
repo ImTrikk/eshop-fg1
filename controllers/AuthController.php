@@ -95,6 +95,7 @@ function login($pdo) {
       $userData = $userModel->getUserData($email);
       $userCartData = $userModel->getUserCart($email);
       // Generate token (assuming you have a function called generateToken)
+      
       $secretKey = ucfirst(getenv('JWT_SECRET'));
       $token = generateToken($userData['user_id'], $secretKey);
 
@@ -130,9 +131,6 @@ function login($pdo) {
   }
 }
 
-function forgotPassword($pdo){
-
-}
 
 function logout($user_id) {
   // Handle logout logic, e.g., clearing session data
