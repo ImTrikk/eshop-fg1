@@ -1,51 +1,42 @@
 <?php
-class Router
+
+
+function registerUserRoutes($router, $pdo)
 {
-    private $routes = [];
+    $router->get('/users', function () use ($pdo) {
+        // getUsers($pdo);
+    });
 
-    public function get($route, $handler)
-    {
-        $this->addRoute('GET', $route, $handler);
-    }
+    $router->get('/users/{id}', function ($id) use ($pdo) {
+        // getUser($pdo, $id);
+    });
 
-    public function post($route, $handler)
-    {
-        $this->addRoute('POST', $route, $handler);
-    }
+    $router->post('/user-create', function () use ($pdo) {
+        register($pdo);
+    });
 
-    public function put($route, $handler)
-    {
-        $this->addRoute('PUT', $route, $handler);
-    }
+    $router->post('/user-login', function () use ($pdo) {
+        login($pdo);
+    });
 
-    public function delete($route, $handler)
-    {
-        $this->addRoute('DELETE', $route, $handler);
-    }
+    // $router->post('/user-send-otp', function () use ($pdo) {
+    //     sendOtp($pdo);
+    // });
 
-    private function addRoute($method, $route, $handler)
-    {
-        $this->routes[$method][$route] = $handler;
-    }
+    // $router->post('/user-change-password', function () use ($pdo) {
+    //     changePassword($pdo);
+    // });
 
-    public function dispatch($requestUri, $requestMethod)
-    {
-        // Remove the query string from the URI
-        $uri = strtok($requestUri, '?');
-        $matches = [];
+    // $router->put('/users/{id}', function ($id) use ($pdo) {
+    //     // updateUser($pdo, $id);
+    // });
 
-        if (isset($this->routes[$requestMethod])) {
-            foreach ($this->routes[$requestMethod] as $route => $handler) {
-                // Replace route parameters like {id} with regex
-                $pattern = preg_replace('/\{[a-zA-Z]+\}/', '([0-9]+)', $route);
-                if (preg_match("#^$pattern$#", $uri, $matches)) {
-                    array_shift($matches); // Remove the full match from $matches
-                    return call_user_func_array($handler, $matches);
-                }
-            }
-        }
-        // Return 404 if no matching route found
-        http_response_code(404);
-        echo json_encode(['error' => 'Route not found']);
-    }
+    // $router->delete('/users/{id}', function ($id) use ($pdo) {
+    //     // deleteUser($pdo, $id);
+    // });
+
+    // $router->delete('/user-logout', function () use ($pdo) {
+    //     // logoutUser($pdo);
+    // });
+    // Add other routes similarly...
 }

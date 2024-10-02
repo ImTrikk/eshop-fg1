@@ -2,8 +2,7 @@
 
 require_once(__DIR__ . '/../database/models/productModel.php');
 
-function getUserCart($pdo) {
- $user_id = $_GET['user_id'] ?? null; // Retrieve the user_id from the query parameters
+function getUserCart($pdo, $user_id) {
 
  if (!$user_id) {
   http_response_code(400); // Bad Request
