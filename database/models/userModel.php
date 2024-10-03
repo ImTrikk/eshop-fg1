@@ -49,7 +49,7 @@ class UserModel
 
     public function getUserData($email)
     {
-        $sql = "SELECT user_id, email, first_name, last_name, contacts FROM users WHERE email = :email";
+        $sql = "SELECT user_id, email, first_name, last_name, contacts, rl.role_name FROM users inner join roles rl on users.role_id = rl.role_id WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':email' => $email]);
         return $stmt->fetch(PDO::FETCH_ASSOC);

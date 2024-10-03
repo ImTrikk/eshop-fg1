@@ -103,13 +103,13 @@ function login($pdo)
 
 
     // todo need to change this for correct checking, uncomment it
-    // if ($user && password_verify($password, $user['password'])){
+    // if ($user && password_verify($password, $user['password'])) {
     if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
       $secretKey = ucfirst(getenv('JWT_SECRET'));
-      $token = generateToken($userData['user_id'], $secretKey);
+      $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
 
       unset($userData['password']);
       unset($user['password']);

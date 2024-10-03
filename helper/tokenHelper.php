@@ -5,20 +5,21 @@ use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
 
-function generateToken($userId, $secretKey)
+function generateToken($userId, $role_name, $secretKey)
 {
 
-  $expirationTime = 3600 * 3;
+    $expirationTime = 3600 * 3;
 
-  $issuedAt = time();
-  $expirationTime = $issuedAt + $expirationTime;
-  $payload = [
-    'iat' => $issuedAt,
-    'exp' => $expirationTime,
-    'userId' => $userId
-  ];
+    $issuedAt = time();
+    $expirationTime = $issuedAt + $expirationTime;
+    $payload = [
+        'iat' => $issuedAt,
+        'exp' => $expirationTime,
+        'userId' => $userId,
+        'role' => $role_name
+    ];
 
-  return JWT::encode($payload, $secretKey, 'HS256');
+    return JWT::encode($payload, $secretKey, 'HS256');
 }
 
 // require_once 'database/Database.php';
@@ -69,7 +70,7 @@ function validateToken($token, $pdo, $user_id)
         // Extract the user ID from the token
         $userId = $decoded->userId;
 
-        
+
 
         if ($user_id !== $userId) {
             return false;

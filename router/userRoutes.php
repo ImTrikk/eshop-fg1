@@ -1,16 +1,8 @@
 <?php
 
 
-function registerUserRoutes($router, $pdo)
+function userRoutes($router, $pdo)
 {
-    $router->get('/users', function () use ($pdo) {
-        // getUsers($pdo);
-    });
-
-    $router->get('/users/{id}', function ($id) use ($pdo) {
-        // getUser($pdo, $id);
-    });
-
     $router->post('/user-create', function () use ($pdo) {
         register($pdo);
     });
@@ -19,9 +11,18 @@ function registerUserRoutes($router, $pdo)
         login($pdo);
     });
 
-    // $router->post('/user-send-otp', function () use ($pdo) {
-    //     sendOtp($pdo);
-    // });
+    $router->post('/user-send-otp', function () use ($pdo) {
+        sendOtp();
+    });
+
+    $router->get('/users', function () use ($pdo) {
+        // getUsers($pdo);
+    });
+
+    $router->get('/user/{id}', function ($id) use ($pdo) {
+        // getUser($pdo, $id);
+    });
+
 
     // $router->post('/user-change-password', function () use ($pdo) {
     //     changePassword($pdo);

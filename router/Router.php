@@ -40,7 +40,7 @@ class Router
     // Replace route parameters like {id} with regex to match UUIDs or alphanumerics
     $pattern = preg_replace('/\{[a-zA-Z]+\}/', '([\w-]+)', $route);
     if (preg_match("#^$pattern$#", $uri, $matches)) {
-     array_shift($matches); // Remove the full match from $matches
+     array_shift($matches); // Remove the full match from $ 
      return call_user_func_array($handler, $matches);
     }
    }
