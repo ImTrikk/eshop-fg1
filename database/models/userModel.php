@@ -53,6 +53,29 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function updatePassword($email, $password)
+    {
+        try {
+            // Prepare the SQL statement
+            $stmt = $this->pdo->prepare("UPDATE users SET password = :password WHERE email = :email");
+
+            // Bind the parameters
+            $stmt->bindParam(':password', $password, PDO::PARAM_STR);
+            $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+
+            // Execute the query
+            if ($stmt->execute()) {
+                return ['status' => 'success', 'message' => 'Password updated successfully'];
+            } else {
+                return ['status' => 'error', 'message' => 'Failed to update the password'];
+            }
+        } catch (PDOException $e) {
+            // Handle any errors
+            return ['status' => 'error', 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
+
     public function getUserData($email)
     {
         $sql = "SELECT user_id, email, first_name, last_name, contacts, rl.role_name FROM users inner join roles rl on rl.role_id = users.role_id WHERE email = :email";

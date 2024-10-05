@@ -68,6 +68,10 @@ function verifyOtp($user_otp)
  // Retrieve OTP from session
  $stored_otp = isset($_SESSION['otp']) ? $_SESSION['otp'] : null;
 
+
+ print_r($stored_otp);
+ print_r($user_otp);
+
  // Check if the OTP matches
  if ($user_otp === $stored_otp) {
   http_response_code(200);

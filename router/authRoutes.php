@@ -22,6 +22,7 @@ function authRoutes($router, $pdo)
   passwordResetRequest();
  });
 
+ // todo add validator for incoming request!
  $router->post('/auth/password/reset', function () use ($pdo) {
   passwordReset($pdo);
  });
@@ -35,7 +36,7 @@ function authRoutes($router, $pdo)
 
  });
 
-
+ //
  $router->post('/auth/user/verify', function () use ($pdo) {
 
  });

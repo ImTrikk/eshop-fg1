@@ -103,8 +103,8 @@ function login($pdo)
 
 
     // todo need to change this for correct checking, uncomment it
-    // if ($user && password_verify($password, $user['password'])) {
-    if ($user && $password) {
+    if ($user && password_verify($password, $user['password'])) {
+      // if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
@@ -202,22 +202,40 @@ function passwordResetRequest()
 function passwordReset($pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $jsonData = file_get_contents(filename: "php://input");
+    // Get JSON input
+    $jsonData = file_get_contents("php://input");
     $data = json_decode($jsonData, true);
 
-    $email = $data['email'];
-    $password = $data['password'];
+    // Extract data from the request
+    $otp = $data['otp'] ?? null; // Use null coalescing operator to avoid undefined index notice
+    $email = $data['email'] ?? null;
+    $password = $data['password'] ?? null;
 
-    // send  email to user with otp
-    sendOtp($email);
+    // Validate inputs
+    if (!$otp || !$email || !$password) {
+      echo json_encode(['error' => 'Missing required fields']);
+      return;
+    }
 
-    // check otp
-    // get new user password
-    //has password
-    // insert hashed_password to database
+    verifyOtp($otp);
 
+    // Hash the new password
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+    // Create an instance of UserModel
+    $userModel = new UserModel($pdo);
+
+    // Update the password in the database
+    if ($userModel->updatePassword($email, $hashedPassword)) {
+      echo json_encode(['message' => 'Password updated successfully']);
+    } else {
+      echo json_encode(['error' => 'Failed to update password']);
+    }
+  } else {
+    echo json_encode(['error' => 'Invalid request method']);
   }
 }
+
 
 function logout($user_id)
 {
