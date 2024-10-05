@@ -24,7 +24,6 @@ function register($pdo)
       $email = $data['email'] ?? '';
       $password = $data['password'] ?? '';
       $dateOfBirth = $data['date_of_birth'] ?? '';
-      $roleId = $data['role_id'] ?? '';
 
       // Prepare the data for validation
       $userData = [
@@ -34,7 +33,6 @@ function register($pdo)
         'email' => $email,
         'password' => $password,
         'date_of_birth' => $dateOfBirth,
-        'role_id' => $roleId
       ];
 
       // Validate user data
@@ -50,10 +48,10 @@ function register($pdo)
 
       try {
         $userModel = new userModel(pdo: $pdo);
-        $userModel->registerUser($userData, $hashedPassword);
+        $registeredUser = $userModel->registerUser($userData, $hashedPassword);
 
         http_response_code(201);
-        echo json_encode(["message" => "User registered successfully!"]);
+        echo json_encode(["message" => "User registered successfully!", 'User' => $registeredUser]);
       } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(["error" => "Registration failed: " . $e->getMessage()]);
@@ -75,6 +73,8 @@ function login($pdo)
     $data = json_decode($jsonData, true);
 
 
+    // todo add a validator for incoming email and password
+
     $email = $data['email'] ?? '';
     $password = $data['password'] ?? '';
 
@@ -90,7 +90,6 @@ function login($pdo)
       return;
     }
 
-
     // Basic validation
     if (empty($email) || empty($password)) {
       http_response_code(400); // Bad Request
@@ -103,12 +102,13 @@ function login($pdo)
 
 
     // todo need to change this for correct checking, uncomment it
-    // if ($user && password_verify($password, $user['password'])) {
-    if ($user && $password) {
+    if ($user && password_verify($password, $user['password'])) {
+      // if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
       $secretKey = ucfirst(getenv('JWT_SECRET'));
+
       $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
 
       unset($userData['password']);
@@ -142,11 +142,40 @@ function login($pdo)
   }
 }
 
-function sendOtp()
+function userProfile($pdo, $user_id)
 {
 
+  $userModel = new UserModel($pdo);
+  $user_profile = $userModel->getUserProfile($user_id);
+
+  http_response_code(200);
+  echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
+
+}
+
+function assignRole($pdo)
+{
+
+  $jsonData = file_get_contents(filename: "php://input");
+  $data = json_decode($jsonData, true);
+
+  $user_id = $data['user_id'];
+  $role = $data['role'];
+
+  $userModel = new UserModel($pdo);
+  $user = $userModel->assignUserRole($user_id, $role);
 
 
+  http_response_code(201);
+  echo json_encode(['message' => "Assigned role to user", 'User' => $user]);
+}
+
+function sendOtp()
+{
+}
+
+function passwordResetRequest()
+{
 }
 
 function changePassword($pdo)

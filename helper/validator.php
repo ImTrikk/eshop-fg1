@@ -55,13 +55,6 @@ function validateUser($data) {
    $errors[] = 'You must be at least 13 years old to register.';
  }
 
- // Validate role ID
- if (empty($data['role_id'])) {
-   $errors[] = 'Role ID is required.';
- } elseif (!is_numeric($data['role_id'])) {
-   $errors[] = 'Role ID must be a numeric value.';
- }
-
  return $errors;
 }
 

@@ -37,7 +37,7 @@ class Router
 
   if (isset($this->routes[$requestMethod])) {
    foreach ($this->routes[$requestMethod] as $route => $handler) {
-    // Replace route parameters like {id} with regex to match UUIDs or alphanumerics
+
     $pattern = preg_replace('/\{[a-zA-Z]+\}/', '([\w-]+)', $route);
     if (preg_match("#^$pattern$#", $uri, $matches)) {
      array_shift($matches); // Remove the full match from $ 
