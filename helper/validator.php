@@ -1,69 +1,121 @@
 <?php
 
-function validateUser($data) {
- $errors = [];
+function validateUser($data)
+{
+  $errors = [];
 
- // Validate first name
- if (empty($data['first_name'])) {
-   echo $data['first_name'];
-   $errors[] = 'First name is required.';
- } elseif (!preg_match("/^[a-zA-Z '-]+$/", $data['first_name'])) {
-   $errors[] = 'First name can only contain letters, apostrophes, and hyphens.';
- }
+  // Validate first name
+  if (empty($data['first_name'])) {
+    echo $data['first_name'];
+    $errors[] = 'First name is required.';
+  } elseif (!preg_match("/^[a-zA-Z '-]+$/", $data['first_name'])) {
+    $errors[] = 'First name can only contain letters, apostrophes, and hyphens.';
+  }
 
- // Validate last name
- if (empty($data['last_name'])) {
-   $errors[] = 'Last name is required.';
- } elseif (!preg_match("/^[a-zA-Z'-]+$/", $data['last_name'])) {
-   $errors[] = 'Last name can only contain letters, apostrophes, and hyphens.';
- }
+  // Validate last name
+  if (empty($data['last_name'])) {
+    $errors[] = 'Last name is required.';
+  } elseif (!preg_match("/^[a-zA-Z'-]+$/", $data['last_name'])) {
+    $errors[] = 'Last name can only contain letters, apostrophes, and hyphens.';
+  }
 
- // Validate email
+  // Validate email
 //  
- if (empty($data['email'])) {
-   $errors[] = 'Email is required.';
- } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-   $errors[] = 'Invalid email format.';
- } else {
-     // Check if email already exists in the database (pseudo-code)
-     // if (emailExists($data['email'])) {
-     //     $errors[] = 'Email already exists.';
-     // }
- }
+  if (empty($data['email'])) {
+    $errors[] = 'Email is required.';
+  } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    $errors[] = 'Invalid email format.';
+  } else {
+    // Check if email already exists in the database (pseudo-code)
+    // if (emailExists($data['email'])) {
+    //     $errors[] = 'Email already exists.';
+    // }
+  }
 
- // Validate password
- if (empty($data['password'])) {
-   $errors[] = 'Password is required.';
- } elseif (strlen($data['password']) < 8) {
-   $errors[] = 'Password must be at least 8 characters.';
- } elseif (!preg_match("/[A-Z]/", $data['password'])) {
-   $errors[] = 'Password must contain at least one uppercase letter.';
- } elseif (!preg_match("/[a-z]/", $data['password'])) {
-   $errors[] = 'Password must contain at least one lowercase letter.';
- } elseif (!preg_match("/[0-9]/", $data['password'])) {
-   $errors[] = 'Password must contain at least one digit.';
- } elseif (!preg_match("/[\W_]/", $data['password'])) {
-   $errors[] = 'Password must contain at least one special character.';
- }
+  // Validate password
+  if (empty($data['password'])) {
+    $errors[] = 'Password is required.';
+  } elseif (strlen($data['password']) < 8) {
+    $errors[] = 'Password must be at least 8 characters.';
+  } elseif (!preg_match("/[A-Z]/", $data['password'])) {
+    $errors[] = 'Password must contain at least one uppercase letter.';
+  } elseif (!preg_match("/[a-z]/", $data['password'])) {
+    $errors[] = 'Password must contain at least one lowercase letter.';
+  } elseif (!preg_match("/[0-9]/", $data['password'])) {
+    $errors[] = 'Password must contain at least one digit.';
+  } elseif (!preg_match("/[\W_]/", $data['password'])) {
+    $errors[] = 'Password must contain at least one special character.';
+  }
 
- // Validate date of birth
- if (empty($data['date_of_birth'])) {
-  $errors[] = 'Date of birth is required.';
- } elseif (!validateDate($data['date_of_birth'])) {
-   $errors[] = 'Invalid date format. Use YYYY-MM-DD.';
- } elseif (strtotime($data['date_of_birth']) > strtotime('-13 years')) {
-   $errors[] = 'You must be at least 13 years old to register.';
- }
+  // Validate date of birth
+  if (empty($data['date_of_birth'])) {
+    $errors[] = 'Date of birth is required.';
+  } elseif (!validateDate($data['date_of_birth'])) {
+    $errors[] = 'Invalid date format. Use YYYY-MM-DD.';
+  } elseif (strtotime($data['date_of_birth']) > strtotime('-13 years')) {
+    $errors[] = 'You must be at least 13 years old to register.';
+  }
 
- return $errors;
+  return $errors;
 }
 
-function validateEmail($email){
+function validateResetPassword($data)
+{
+  $errors = [];
+
+  // Validate OTP
+  if (empty($data['otp'])) {
+    $errors['otp'] = 'OTP is required';
+  } else {
+    // Optional: Validate the format or length of OTP if needed
+    if (!preg_match('/^\d{6}$/', $data['otp'])) {
+      $errors['otp'] = 'OTP must be a 6-digit number';
+    }
+  }
+
+  // Validate Email
+  if (empty($data['email'])) {
+    $errors['email'] = 'Email is required';
+  } else {
+    // Check if the email is valid
+    if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+      $errors['email'] = 'Invalid email format';
+    }
+  }
+
+  // Validate Password
+  if (empty($data['password'])) {
+    $errors['password'] = 'Password is required';
+  } else {
+    // Check password strength (e.g., length, complexity)
+    if (strlen($data['password']) < 8) {
+      $errors['password'] = 'Password must be at least 8 characters long';
+    }
+    if (!preg_match('/[A-Z]/', $data['password'])) {
+      $errors['password'] = 'Password must contain at least one uppercase letter';
+    }
+    if (!preg_match('/[a-z]/', $data['password'])) {
+      $errors['password'] = 'Password must contain at least one lowercase letter';
+    }
+    if (!preg_match('/[0-9]/', $data['password'])) {
+      $errors['password'] = 'Password must contain at least one digit';
+    }
+    if (!preg_match('/[\W]/', $data['password'])) {
+      $errors['password'] = 'Password must contain at least one special character';
+    }
+  }
+
+  return $errors;
+}
+
+function validateEmail($email)
+{
   $errors = [];
 }
 
 // Helper function to validate date format (YYYY-MM-DD)
-function validateDate($date) {
-    $d = DateTime::createFromFormat('Y-m-d', $date);
-    return $d && $d->format('Y-m-d') === $date;
+function validateDate($date)
+{
+  $d = DateTime::createFromFormat('Y-m-d', $date);
+  return $d && $d->format('Y-m-d') === $date;
 }

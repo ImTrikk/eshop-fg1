@@ -217,7 +217,25 @@ function passwordReset($pdo)
       return;
     }
 
-    verifyOtp($otp);
+    $userReset = [
+      'otp' => $data['otp'],
+      'email' => $data['email'],
+      'password' => $data['password']
+    ];
+
+
+    //fix still has error in here
+    $errors = validateResetPassword($userReset);
+
+    if (!empty($errors)) {
+      echo json_encode(["errors" => $errors]);
+      return;
+    }
+
+    // Verify the OTP and stop execution if it fails
+    if (!verifyOtp($otp)) {
+      return; // Stop execution if OTP is invalid
+    }
 
     // Hash the new password
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
@@ -235,6 +253,7 @@ function passwordReset($pdo)
     echo json_encode(['error' => 'Invalid request method']);
   }
 }
+
 
 
 function logout($user_id)
