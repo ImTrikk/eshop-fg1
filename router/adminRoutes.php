@@ -11,7 +11,6 @@ function adminRoutes($router, $pdo)
   authenticate($_REQUEST, function ($request) use ($pdo) {
    // Authorize based on role
    authorize('Admin', $request, function ($request) use ($pdo) {
-    // Proceed to actual logic
     getAllUsers($pdo);
    });
   });

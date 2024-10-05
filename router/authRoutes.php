@@ -19,16 +19,26 @@ function authRoutes($router, $pdo)
  });
 
  $router->post('/auth/password/reset/request', function () use ($pdo) {
-
+  passwordResetRequest();
  });
 
  $router->post('/auth/password/reset', function () use ($pdo) {
-
+  passwordReset($pdo);
  });
 
 
 
  // ====================== AUTHORIZATION ==================== //
+
+ // todo add verify request function router for users
+ $router->post('/auth/user/verify/request', function () use ($pdo) {
+
+ });
+
+
+ $router->post('/auth/user/verify', function () use ($pdo) {
+
+ });
 
  // todo add authentication and authorization middlewares
  $router->get('/auth/user/profile/{id}', function ($id) use ($pdo) {
@@ -41,10 +51,13 @@ function authRoutes($router, $pdo)
  });
 
 
-
  // todo add authentication and authorization middlewares
  $router->post('/auth/role/assign', function () use ($pdo) {
-  assignRole($pdo);
+  authenticate($_REQUEST, function ($request) use ($pdo) {
+   authorize('Admin', $request, function ($request) use ($pdo) {
+    assignRole($pdo);
+   });
+  });
  });
 
  $router->post('/auth/role/revoke', function () use ($pdo) {

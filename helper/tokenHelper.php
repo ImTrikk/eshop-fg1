@@ -70,17 +70,15 @@ function validateToken($token, $pdo, $user_id)
         // Extract the user ID from the token
         $userId = $decoded->userId;
 
-
-
         if ($user_id !== $userId) {
             return false;
         }
 
         // Check if the token exists in the database
         if (isTokenInDatabase($pdo, $userId, $token)) {
-            return $userId; // Token is valid, return the user ID
+            return $userId; 
         } else {
-            return false; // Token not found in DB or invalid
+            return false; 
         }
 
     } catch (Exception $e) {

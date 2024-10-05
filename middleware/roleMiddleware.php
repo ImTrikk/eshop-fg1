@@ -15,6 +15,7 @@ function authorize($role, $request, $next)
 
 function authorizeUser($request, $id, $next)
 {
+
  // Ensure the user is authenticated
  if (!isset($request['user'])) {
   http_response_code(403); // Forbidden

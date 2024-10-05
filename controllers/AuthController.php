@@ -5,6 +5,7 @@ require 'vendor/autoload.php';
 require 'database/database.php';
 require 'helper/validator.php';
 require 'helper/tokenHelper.php';
+require 'helper/otpHelper.php';
 require_once(__DIR__ . '/../database/models/userModel.php');
 
 function register($pdo)
@@ -102,8 +103,8 @@ function login($pdo)
 
 
     // todo need to change this for correct checking, uncomment it
-    if ($user && password_verify($password, $user['password'])) {
-      // if ($user && $password) {
+    // if ($user && password_verify($password, $user['password'])) {
+    if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
@@ -142,43 +143,63 @@ function login($pdo)
   }
 }
 
+function verifyUserRequest()
+{
+  // send OTP to email
+}
+
+function verifyUser()
+{
+  // recieve otp from reqeust
+  // uddate users table to true
+}
+
 function userProfile($pdo, $user_id)
 {
 
-  $userModel = new UserModel($pdo);
-  $user_profile = $userModel->getUserProfile($user_id);
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $userModel = new UserModel($pdo);
+    $user_profile = $userModel->getUserProfile($user_id);
 
-  http_response_code(200);
-  echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
+    http_response_code(200);
+    echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
+  }
 
 }
 
 function assignRole($pdo)
 {
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $jsonData = file_get_contents(filename: "php://input");
+    $data = json_decode($jsonData, true);
 
-  $jsonData = file_get_contents(filename: "php://input");
-  $data = json_decode($jsonData, true);
+    $user_id = $data['user_id'];
+    $role = $data['role'];
 
-  $user_id = $data['user_id'];
-  $role = $data['role'];
-
-  $userModel = new UserModel($pdo);
-  $user = $userModel->assignUserRole($user_id, $role);
+    $userModel = new UserModel($pdo);
+    $user = $userModel->assignUserRole($user_id, $role);
 
 
-  http_response_code(201);
-  echo json_encode(['message' => "Assigned role to user", 'User' => $user]);
+    http_response_code(201);
+    echo json_encode(['message' => "Assigned role to user", 'User' => $user]);
+  }
 }
 
-function sendOtp()
-{
-}
 
 function passwordResetRequest()
 {
+  // send otp to user's email
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $jsonData = file_get_contents(filename: "php://input");
+    $data = json_decode($jsonData, true);
+
+    $email = $data['email'];
+
+    sendOtp($email);
+  }
 }
 
-function changePassword($pdo)
+function passwordReset($pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $jsonData = file_get_contents(filename: "php://input");
@@ -198,7 +219,6 @@ function changePassword($pdo)
   }
 }
 
-
 function logout($user_id)
 {
   // Handle logout logic, e.g., clearing session data
@@ -206,8 +226,6 @@ function logout($user_id)
   session_destroy();
 
   //remove token form 
-
-
 
   echo json_encode(["message" => "Logged out successfully!"]);
 }
