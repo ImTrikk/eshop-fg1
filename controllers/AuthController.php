@@ -79,6 +79,18 @@ function login($pdo)
     $email = $data['email'] ?? '';
     $password = $data['password'] ?? '';
 
+    $userData = [
+      'email' => $data['email'],
+      'password' => $data['password']
+    ];
+
+    $error = validateLogin($userData);
+
+    if (!empty($error)) {
+      echo json_encode(["errors" => $error]);
+      return;
+    }
+
     // Initialize UserModel
     $userModel = new userModel(pdo: $pdo);
     // make request to check email exist in database
@@ -143,17 +155,6 @@ function login($pdo)
   }
 }
 
-function verifyUserRequest()
-{
-  // send OTP to email
-}
-
-function verifyUser()
-{
-  // recieve otp from reqeust
-  // uddate users table to true
-}
-
 function userProfile($pdo, $user_id)
 {
 
@@ -207,7 +208,7 @@ function passwordReset($pdo)
     $data = json_decode($jsonData, true);
 
     // Extract data from the request
-    $otp = $data['otp'] ?? null; // Use null coalescing operator to avoid undefined index notice
+    $otp = $data['otp'] ?? null;
     $email = $data['email'] ?? null;
     $password = $data['password'] ?? null;
 
@@ -223,8 +224,6 @@ function passwordReset($pdo)
       'password' => $data['password']
     ];
 
-
-    //fix still has error in here
     $errors = validateResetPassword($userReset);
 
     if (!empty($errors)) {
@@ -254,15 +253,66 @@ function passwordReset($pdo)
   }
 }
 
+function verifyUserRequest($id)
+{
+  // send OTP to email
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $jsonData = file_get_contents(filename: "php://input");
+    $data = json_decode($jsonData, true);
+
+    $email = $data['email'];
+    $user_id = $id;
 
 
-function logout($user_id)
+    $userData = [
+      'email' => $email,
+      'user_id' => $user_id
+    ];
+
+    // validate inputs
+    $errors = validateVerifyRequest($userData);
+
+    if (!empty($errors)) {
+      echo json_encode(["errors" => $errors]);
+      return;
+    }
+    sendOtp($email);
+  }
+}
+
+function verifyUser($user_id, $pdo)
+{
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $jsonData = file_get_contents(filename: "php://input");
+    $data = json_decode($jsonData, true);
+
+    $email = $data['email'];
+    $otp = $data['otp'];
+
+    if (!verifyOtp($otp)) {
+      return;
+    }
+    
+    $userModel = new UserModel($pdo);
+
+    if ($userModel->verifyEmail($email)) {
+      http_response_code(200);
+      echo json_encode(['message' => 'Email verified successfully']);
+    } else {
+      http_response_code(400);
+      echo json_encode(['error' => 'Failed to verify email!']);
+    }
+  }
+}
+
+function logout($user_id, $pdo)
 {
   // Handle logout logic, e.g., clearing session data
   session_start();
   session_destroy();
 
-  //remove token form 
+  $userModel = new UserModel($pdo);
+  $userModel->logoutModel($user_id);
 
   echo json_encode(["message" => "Logged out successfully!"]);
 }

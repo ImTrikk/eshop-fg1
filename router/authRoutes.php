@@ -14,38 +14,37 @@ function authRoutes($router, $pdo)
   login($pdo);
  });
 
- $router->post('/auth/logout', function () use ($pdo) {
-  logout($pdo);
- });
-
  $router->post('/auth/password/reset/request', function () use ($pdo) {
   passwordResetRequest();
  });
 
- // todo add validator for incoming request!
  $router->post('/auth/password/reset', function () use ($pdo) {
   passwordReset($pdo);
  });
 
+ $router->post('/auth/logout/{id}', function ($id) use ($pdo) {
+  logout($id, $pdo);
+ });
 
 
  // ====================== AUTHORIZATION ==================== //
 
  // todo add verify request function router for users
- $router->post('/auth/user/verify/request', function () use ($pdo) {
-
+ $router->post('/auth/user/verify/request/{id}', function ($id) use ($pdo) {
+  authenticate($_REQUEST, function ($id) {
+   verifyUserRequest($id);
+  });
  });
 
  //
- $router->post('/auth/user/verify', function () use ($pdo) {
-
+ $router->post('/auth/user/verify/{id}', function ($id) use ($pdo) {
+  verifyUser($id, $pdo);
  });
 
  // todo add authentication and authorization middlewares
  $router->get('/auth/user/profile/{id}', function ($id) use ($pdo) {
   authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-   authorizeUser($request, $id, function ($authorizedRequest) use ($pdo, $id) {
-    // Fetch and return the user profile if authorized
+   authorizeUser($request, $id, function () use ($pdo, $id) {
     userProfile($pdo, $id);
    });
   });

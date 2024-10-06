@@ -59,6 +59,27 @@ function validateUser($data)
   return $errors;
 }
 
+function validateLogin($data)
+{
+  $errors = [];
+
+  // Check if email is present and valid
+  if (empty($data['email'])) {
+    $errors['email'] = 'Email is required.';
+  } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    $errors['email'] = 'Invalid email format.';
+  }
+
+  // Check if password is present and of valid length (bcrypt hashes are 60 characters long)
+  if (empty($data['password'])) {
+    $errors['password'] = 'Password is required.';
+  } elseif (strlen($data['password']) < 6) { // For user input password, you can check its length
+    $errors['password'] = 'Password must be at least 6 characters long.';
+  }
+
+  return $errors;
+}
+
 function validateResetPassword($data)
 {
   $errors = [];
@@ -104,6 +125,13 @@ function validateResetPassword($data)
       $errors['password'] = 'Password must contain at least one special character';
     }
   }
+
+  return $errors;
+}
+
+function validateVerifyRequest($data)
+{
+  $errors = [];
 
   return $errors;
 }

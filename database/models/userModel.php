@@ -24,7 +24,7 @@ class UserModel
             ':email' => $userData['email'],
             ':password' => $hashedPassword,
             ':date_of_birth' => $userData['date_of_birth'],
-            ':role_id' => 1
+            ':role_id' => 1 // make user sa buyer
         ]);
 
         // Fetch the user details
@@ -72,6 +72,28 @@ class UserModel
         } catch (PDOException $e) {
             // Handle any errors
             return ['status' => 'error', 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
+    public function verifyEmail($email)
+    {
+        // Assuming you are using PDO for database connection
+        try {
+            $sql = "UPDATE users SET is_verified = 1 WHERE email = :email";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+            // Execute the query
+            $stmt->execute(['email' => $email]);
+
+            if ($stmt->rowCount() > 0) {
+                return ["success" => true, "message" => "Email verified successfully."];
+            } else {
+                return ["success" => false, "message" => "No user found with this email."];
+            }
+
+        } catch (PDOException $e) {
+            // Handle any database errors
+            return ["success" => false, "message" => "Database error: " . $e->getMessage()];
         }
     }
 
@@ -164,8 +186,11 @@ class UserModel
         }
     }
 
-    public function destroyToken()
+    public function logoutModel($user_id)
     {
-
+        $sql = 'DELETE * from tokens where user_id = :user_id';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':email' => $user_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
