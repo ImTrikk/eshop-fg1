@@ -227,7 +227,7 @@ function assignRole($pdo)
 
 function revokeRole($pdo)
 {
-  if ($_REQUEST['METHOD'] === 'POST') {
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
       // Retrieve JSON data from the request body
       $jsonData = file_get_contents("php://input");
@@ -238,16 +238,17 @@ function revokeRole($pdo)
       //todo add validation
 
       $userModel = new UserModel($pdo);
-      $user = $userModel->revokeUserRole($email, $role);
+      $success = $userModel->revokeUserRole($email, $role);
 
-      if (!$user) {
+      if (!$success) {
         http_response_code(404); // Not Found
         echo json_encode(['error' => 'Failed to revoke user role.']);
         return;
       }
-      // If successful, return a success message
-      http_response_code(201); // Created
-      echo json_encode(['message' => "Successfully revoked role from user", 'User' => $user]);
+
+      // Role revoked successfully
+      http_response_code(200); // OK
+      echo json_encode(['message' => 'User role successfully revoked.']);
     } catch (PDOException $e) {
       // Handle database-related errors
       http_response_code(500); // Internal Server Error
@@ -272,7 +273,6 @@ function passwordResetRequest()
     sendOtp($email);
   }
 }
-
 
 function passwordReset($pdo)
 {

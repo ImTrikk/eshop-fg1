@@ -141,7 +141,7 @@ class UserModel
             ':role_id' => $role
         ]);
 
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->rowCount() > 0;
     }
 
     public function getUserProfile($user_id)
@@ -182,6 +182,8 @@ class UserModel
                 expires_at = :update_expires_at,
                 is_valid = :update_is_valid,
                 email_verified = :update_email_verified";
+
+            // todo verify email using if else query
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
