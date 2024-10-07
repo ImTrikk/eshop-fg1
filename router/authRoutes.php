@@ -61,7 +61,11 @@ function authRoutes($router, $pdo)
  });
 
  $router->post('/auth/role/revoke', function () use ($pdo) {
-
+  authenticate($_REQUEST, function ($request) use ($pdo) {
+   authorize('Admin', $request, function ($request) use ($pdo) {
+    revokeRole($pdo);
+   });
+  });
  });
 
  $router->post('/auth/roles/{user_id}', function ($user_id) use ($pdo) {

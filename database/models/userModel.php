@@ -10,8 +10,6 @@ class UserModel
         $this->pdo = $pdo;
     }
 
-    // Function to get user by email
-
     public function registerUser($userData, $hashedPassword)
     {
         $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
@@ -77,7 +75,6 @@ class UserModel
 
     public function verifyEmail($email)
     {
-        // Assuming you are using PDO for database connection
         try {
             $sql = "UPDATE users SET is_verified = 1 WHERE email = :email";
             $stmt = $this->pdo->prepare($sql);
@@ -106,19 +103,43 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function assignUserRole($user_id, $role)
+    // todo refactor code, make email into user_id
+    public function assignUserRole($email, $role_id)
     {
-        $sql = "UPDATE roles SET role_name = :role WHERE user_id = :user_id";
+        // Update the user's role_id based on their email in the users table
+        $sql = "UPDATE users SET role_id = :role_id WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
-            ':user_id' => $user_id,
-            ':role' => $role
+            ':email' => $email,
+            ':role_id' => $role_id
         ]);
 
+        // Check if any rows were updated
+        if ($stmt->rowCount() === 0) {
+            return false;
+        }
 
-        $sql = "SELECT * FROM roles WHERE user_id = :user_id";
+        // Fetch and return the updated user data
+        $sql = "SELECT u.user_id, CONCAT(first_name, ' ', last_name) AS name, u.email, r.role_name 
+            FROM users u
+            INNER JOIN roles r ON u.role_id = r.role_id
+            WHERE u.email = :email";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':user_id' => $user_id]);
+        $stmt->execute([':email' => $email]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+
+    public function revokeUserRole($email, $role)
+    {
+        // Update the user's role
+        $sql = "UPDATE users SET role_id = :role_id WHERE email = :email";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':email' => $email,
+            ':role_id' => $role
+        ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }

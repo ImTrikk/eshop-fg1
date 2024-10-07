@@ -9,7 +9,6 @@ function authenticate($request, $next)
  // Get headers from the request
  $headers = getallheaders();
 
-
  // Check if 'Authorization' header is present
  if (!isset($headers['Authorization'])) {
   http_response_code(401); // Unauthorized
@@ -35,8 +34,6 @@ function authenticate($request, $next)
 
   // Attach user info to request (or use session/global)
   $request['user'] = $decodedToken;
-
-  // print_r($request);
 
   // Call the next middleware or controller
   return $next($request);
