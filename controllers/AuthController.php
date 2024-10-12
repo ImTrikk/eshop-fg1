@@ -64,7 +64,6 @@ function register($pdo)
   }
 }
 
-
 function login($pdo)
 {
   // Check if the form is submitted via POST request
@@ -224,7 +223,6 @@ function assignRole($pdo)
   }
 }
 
-
 function revokeRole($pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -327,7 +325,10 @@ function passwordReset($pdo)
   }
 }
 
-function verifyUserRequest($id)
+
+// todo work in here  for email verification
+// user clicks link directed to localhost then it should make reques to verify with the token
+function verifyUserRequest($id, $pdo)
 {
   // send OTP to email
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -335,41 +336,48 @@ function verifyUserRequest($id)
     $data = json_decode($jsonData, true);
 
     $email = $data['email'];
-    $user_id = $id;
 
+    $userModel = new UserModel($pdo);
+    $userData = $userModel->getUserData($email);
 
-    $userData = [
-      'email' => $email,
-      'user_id' => $user_id
-    ];
+    // get secret key
+    $secretKey = ucfirst(getenv('JWT_SECRET'));
 
-    // validate inputs
-    $errors = validateVerifyRequest($userData);
-
-    if (!empty($errors)) {
-      echo json_encode(["errors" => $errors]);
-      return;
-    }
-    sendOtp($email);
+    $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
+  
+    // sendEmailVerification
+    sendVerificationEmail($email, $token);
+    // sendOtp($email);
   }
 }
 
-function verifyUser($user_id, $pdo)
+function verifyUser($token, $pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $jsonData = file_get_contents(filename: "php://input");
-    $data = json_decode($jsonData, true);
+    $token = $_GET['token'] ?? null;
 
-    $email = $data['email'];
-    $otp = $data['otp'];
-
-    if (!verifyOtp($otp)) {
-      return;
+    if (!$token) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Token is missing']);
+        return;
     }
+    
+    // validate token
+    checkAuthToken($pdo, $token);
 
+
+
+    // decode token
+
+    //!! todo work on this !!!!
+
+    // checkAuthToken($pdo, $token);
+
+    // validateToken($token, $pdo, );
+
+    // check token
     $userModel = new UserModel($pdo);
-
-    if ($userModel->verifyEmail($email)) {
+    if ($userModel->verifyEmail($token)) {
       http_response_code(200);
       echo json_encode(['message' => 'Email verified successfully']);
     } else {
@@ -379,6 +387,29 @@ function verifyUser($user_id, $pdo)
   }
 }
 
+// todo work on this
+function emailVerication($user_id, $pdo)
+{
+  if ($_SERVER['REQUEST_METHOD' === 'POST']) {
+    $jsonData = file_get_contents(filename: "php://input");
+    $data = json_decode($jsonData, true);
+
+    $email = $data['email'];
+
+    // generate 
+    $secretKey = ucfirst(getenv('JWT_SECRET'));
+
+    // $token = generateToken($user_id, $userData['role_name'], $secretKey);
+
+    //  function for sending verification_emaila
+    // store token to db with type "EMAIL_VERIFICATION"
+
+    // $userModel = new UserModel($pdo);
+    // $userModel->generateEmailVerificationToken();
+  }
+}
+
+// todo not working yet, needs testing and validation
 function logout($user_id, $pdo)
 {
   // Handle logout logic, e.g., clearing session data
@@ -389,4 +420,11 @@ function logout($user_id, $pdo)
   $userModel->logoutModel($user_id);
 
   echo json_encode(["message" => "Logged out successfully!"]);
+}
+
+function profileUpload($user_id, $pdo)
+{
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // GET FILE UPLOAD 
+  }
 }

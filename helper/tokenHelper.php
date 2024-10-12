@@ -62,7 +62,6 @@ function validateToken($token, $pdo, $user_id)
 {
     $secretKey = ucfirst(getenv('JWT_SECRET')); // Your secret key from env
 
-
     try {
         // Decode the token
         $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));

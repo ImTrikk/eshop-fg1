@@ -73,27 +73,21 @@ class UserModel
         }
     }
 
-    public function verifyEmail($email)
+    public function verifyEmail($token)
     {
-        try {
-            $sql = "UPDATE users SET is_verified = 1 WHERE email = :email";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-            // Execute the query
-            $stmt->execute(['email' => $email]);
-
-            if ($stmt->rowCount() > 0) {
-                return ["success" => true, "message" => "Email verified successfully."];
-            } else {
-                return ["success" => false, "message" => "No user found with this email."];
-            }
-
-        } catch (PDOException $e) {
-            // Handle any database errors
-            return ["success" => false, "message" => "Database error: " . $e->getMessage()];
-        }
+         // Check if the token exists and is valid in the database
+        $sql = "SELECT user_id, expires_at FROM user_tokens WHERE token = :token AND token_type = 'EMAIL_VERIFICATION' AND is_valid = 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':token' => $token]);
     }
 
+    public function addAdress($user_id, $shipping_address)
+    {
+        $sql = 'INSERT into orders (shipping_addres) VALUES (:shipping_address) ';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['shipping_address' => $shipping_address]);
+
+    }
 
     public function getUserData($email)
     {
@@ -103,7 +97,6 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // todo refactor code, make email into user_id
     public function assignUserRole($email, $role_id)
     {
         // Update the user's role_id based on their email in the users table
@@ -173,42 +166,54 @@ class UserModel
     {
         date_default_timezone_set('Asia/Manila');
         try {
-            $sql = " INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
-            VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)
-            ON DUPLICATE KEY UPDATE
-                token = :update_token,
-                token_type = :update_token_type,
-                issued_at = :update_issued_at,
-                expires_at = :update_expires_at,
-                is_valid = :update_is_valid,
-                email_verified = :update_email_verified";
+            // First, check if a token already exists for the user
+            $sqlCheck = "SELECT token FROM user_tokens WHERE user_id = :user_id";
+            $stmtCheck = $this->pdo->prepare($sqlCheck);
+            $stmtCheck->execute([':user_id' => $user_id]);
 
-            // todo verify email using if else query
+            // Determine if a token exists
+            $existingToken = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([
-                ':user_id' => $user_id,
-                ':token' => $token,
-                ':token_type' => 'JWT',  // Assuming bearer token
-                ':issued_at' => date('Y-m-d H:i:s'),
-                ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
-                ':is_valid' => 1,
-                ':email_verified' => 1,
-                // Update part
-                ':update_token' => $token,
-                ':update_token_type' => 'JWT',
-                ':update_issued_at' => date('Y-m-d H:i:s'),
-                ':update_expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
-                ':update_is_valid' => 1,
-                ':update_email_verified' => 1
-            ]);
+            if ($existingToken) {
+                // If a token already exists, update it
+                $sqlUpdate = "UPDATE user_tokens 
+                          SET token = :token, token_type = :token_type, issued_at = :issued_at, expires_at = :expires_at, 
+                              is_valid = :is_valid, email_verified = :email_verified
+                          WHERE user_id = :user_id";
+
+                $stmtUpdate = $this->pdo->prepare($sqlUpdate);
+                $stmtUpdate->execute([
+                    ':user_id' => $user_id,
+                    ':token' => $token,
+                    ':token_type' => 'JWT', // Assuming bearer token
+                    ':issued_at' => date('Y-m-d H:i:s'),
+                    ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
+                    ':is_valid' => 1,
+                    ':email_verified' => 1
+                ]);
+            } else {
+                // If no token exists, insert a new one
+                $sqlInsert = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
+                          VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)";
+
+                $stmtInsert = $this->pdo->prepare($sqlInsert);
+                $stmtInsert->execute([
+                    ':user_id' => $user_id,
+                    ':token' => $token,
+                    ':token_type' => 'JWT', // Assuming bearer token
+                    ':issued_at' => date('Y-m-d H:i:s'),
+                    ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
+                    ':is_valid' => 1,
+                    ':email_verified' => 1
+                ]);
+            }
         } catch (PDOException $e) {
             // Log the error message for debugging
             error_log('Error inserting or updating token: ' . $e->getMessage());
             throw $e;
         }
     }
-
+    
     public function logoutModel($user_id)
     {
         $sql = 'DELETE * from tokens where user_id = :user_id';
