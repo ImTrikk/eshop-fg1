@@ -15,7 +15,7 @@ function generateToken($userId, $role_name, $secretKey)
     $payload = [
         'iat' => $issuedAt,
         'exp' => $expirationTime,
-        'userId' => $userId,
+        'user_id' => $userId,
         'role' => $role_name
     ];
 
@@ -75,9 +75,9 @@ function validateToken($token, $pdo, $user_id)
 
         // Check if the token exists in the database
         if (isTokenInDatabase($pdo, $userId, $token)) {
-            return $userId; 
+            return $userId;
         } else {
-            return false; 
+            return false;
         }
 
     } catch (Exception $e) {
@@ -100,3 +100,27 @@ function isTokenInDatabase($pdo, $userId, $token)
     $stmt->execute([':user_id' => $userId, ':token' => $token]);
     return $stmt->fetch() !== false;
 }
+
+// verifying token
+
+function verifyToken($token)
+{
+    $secretKey = ucfirst(getenv('JWT_SECRET'));
+
+    try {
+        // Decode the token and check for expiration
+        $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
+
+        // Set HTTP response code for successful verification
+        return $decoded;
+    } catch (\Firebase\JWT\ExpiredException $e) {
+        // Handle token expiration
+        http_response_code(401); // Unauthorized
+        return json_encode(['error' => "Token has expired"]);
+    } catch (\Exception $e) {
+        // Handle other errors (e.g., signature invalid, token malformed)
+        http_response_code(401); // Unauthorized
+        return json_encode(['error' => 'Invalid token: ' . $e->getMessage()]);
+    }
+}
+

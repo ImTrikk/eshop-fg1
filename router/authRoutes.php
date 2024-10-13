@@ -28,27 +28,25 @@ function authRoutes($router, $pdo)
 
     // ====================== AUTHORIZATION ==================== //
 
-    // sens email verification to the user
-    // working ---------
     $router->post('/auth/verify/request/{id}', function ($id) use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo) {
-            authorize( 'Seller', $request, function($id) use($pdo) {
-              verifyUserRequest($id, $pdo);
+        authenticate($_REQUEST, function ($request) use ($id, $pdo) {
+            authorize('Seller', $request, function ($request) use ($id, $pdo) {
+                verifyUserRequest($id, $pdo);
             });
         });
     });
 
-    $router->get('/auth/verify-email/{token:[a-zA-Z0-9-_\.]+}', function($token)  use ($pdo) {
+
+
+    // checks token and verify user's email
+    $router->get('/auth/verify-email/{token:[a-zA-Z0-9-_\.]+}', function ($token) use ($pdo) {
         verifyUser($token, $pdo, );
     });
 
-    $router->get('/test', function () {
-        echo "Test route is working!";
-    });
 
     $router->post('/auth/role/assign', function () use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo) {
-            authorize('Admin', $request, function ($request) use ($pdo) {
+            authorize('Buyer', $request, function ($request) use ($pdo) {
                 assignRole($pdo);
             });
         });

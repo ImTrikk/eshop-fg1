@@ -26,7 +26,8 @@ class UserModel
         ]);
 
         // Fetch the user details
-        $stmt = $this->pdo->prepare("SELECT user_id, CONCAT(first_name, ' ', last_name) AS name, email FROM users WHERE email = :email");
+        // fetch the role name
+        $stmt = $this->pdo->prepare("SELECT user_id, role_name, CONCAT(first_name, ' ', last_name) AS name, email FROM users inner join roles rl on users.role_id = rl.role_id WHERE email = :email");
         $stmt->execute([':email' => $userData['email']]);
 
         // Fetch the data
@@ -36,7 +37,7 @@ class UserModel
 
     public function getUserByEmail($email)
     {
-        $sql = "SELECT email, password FROM users WHERE email = :email";
+        $sql = "SELECT email, password, is_verified FROM users WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':email' => $email]);
         return $stmt->fetch(PDO::FETCH_ASSOC); // This returns an associative array
@@ -73,13 +74,22 @@ class UserModel
         }
     }
 
-    public function verifyEmail($token)
+    public function verifyEmail($token, $user_id)
     {
-         // Check if the token exists and is valid in the database
-        $sql = "SELECT user_id, expires_at FROM user_tokens WHERE token = :token AND token_type = 'EMAIL_VERIFICATION' AND is_valid = 1";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':token' => $token]);
+
+        // Update the user's record in the database to verify email
+        $updateSql = "UPDATE users SET is_verified = 1 WHERE user_id = :user_id";
+        $updateStmt = $this->pdo->prepare($updateSql);
+        $updateStmt->execute([':user_id' => $user_id]);
+
+        $deleteSql = "DELETE FROM user_tokens WHERE token = :token";
+        $deleteStmt = $this->pdo->prepare($deleteSql);
+        $deleteStmt->execute([':token' => $token]);
+
+        // Return success response
+        return ['status' => 'success', 'message' => 'Email successfully verified.'];
     }
+
 
     public function addAdress($user_id, $shipping_address)
     {
@@ -162,37 +172,40 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function storeToken($user_id, $token)
+    public function storeToken($user_id, $token, $token_type)
     {
         date_default_timezone_set('Asia/Manila');
         try {
-            // First, check if a token already exists for the user
-            $sqlCheck = "SELECT token FROM user_tokens WHERE user_id = :user_id";
+            // First, check if a token of the specified type (JWT or EMAIL_VERIFICATION) already exists for the user
+            $sqlCheck = "SELECT token, token_type FROM user_tokens WHERE user_id = :user_id AND token_type = :token_type";
             $stmtCheck = $this->pdo->prepare($sqlCheck);
-            $stmtCheck->execute([':user_id' => $user_id]);
+            $stmtCheck->execute([
+                ':user_id' => $user_id,
+                ':token_type' => $token_type
+            ]);
 
-            // Determine if a token exists
+            // Determine if a token of this type exists
             $existingToken = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
             if ($existingToken) {
-                // If a token already exists, update it
+                // If a token of the specified type already exists, update it
                 $sqlUpdate = "UPDATE user_tokens 
-                          SET token = :token, token_type = :token_type, issued_at = :issued_at, expires_at = :expires_at, 
+                          SET token = :token, issued_at = :issued_at, expires_at = :expires_at, 
                               is_valid = :is_valid, email_verified = :email_verified
-                          WHERE user_id = :user_id";
+                          WHERE user_id = :user_id AND token_type = :token_type";
 
                 $stmtUpdate = $this->pdo->prepare($sqlUpdate);
                 $stmtUpdate->execute([
                     ':user_id' => $user_id,
                     ':token' => $token,
-                    ':token_type' => 'JWT', // Assuming bearer token
+                    ':token_type' => $token_type, // Keep the token type as it is (JWT or EMAIL_VERIFICATION)
                     ':issued_at' => date('Y-m-d H:i:s'),
                     ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
                     ':is_valid' => 1,
-                    ':email_verified' => 1
+                    ':email_verified' => ($token_type === 'EMAIL_VERIFICATION') ? 0 : 1 // Set based on token type
                 ]);
             } else {
-                // If no token exists, insert a new one
+                // If no token of this type exists, insert a new one
                 $sqlInsert = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
                           VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)";
 
@@ -200,11 +213,11 @@ class UserModel
                 $stmtInsert->execute([
                     ':user_id' => $user_id,
                     ':token' => $token,
-                    ':token_type' => 'JWT', // Assuming bearer token
+                    ':token_type' => $token_type, // Use the provided token type (JWT or EMAIL_VERIFICATION)
                     ':issued_at' => date('Y-m-d H:i:s'),
                     ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
                     ':is_valid' => 1,
-                    ':email_verified' => 1
+                    ':email_verified' => ($token_type === 'EMAIL_VERIFICATION') ? 0 : 1 // Set based on token type
                 ]);
             }
         } catch (PDOException $e) {
@@ -213,7 +226,8 @@ class UserModel
             throw $e;
         }
     }
-    
+
+
     public function logoutModel($user_id)
     {
         $sql = 'DELETE * from tokens where user_id = :user_id';

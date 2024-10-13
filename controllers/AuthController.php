@@ -51,8 +51,17 @@ function register($pdo)
         $userModel = new userModel(pdo: $pdo);
         $registeredUser = $userModel->registerUser($userData, $hashedPassword);
 
+        $secretKey = ucfirst(getenv('JWT_SECRET'));
+
+        $token = generateToken($registeredUser['user_id'], $registeredUser['role_name'], $secretKey);
+
+        sendVerificationEmail($email, $token);
+
         http_response_code(201);
-        echo json_encode(["message" => "User registered successfully!", 'User' => $registeredUser]);
+        echo json_encode([
+          "message" => "User registered successfully! Please check your email to verify your account before logging in.",
+          "user" => $registeredUser
+        ]);
       } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(["error" => "Registration failed: " . $e->getMessage()]);
@@ -112,10 +121,15 @@ function login($pdo)
     // Fetch user by email
     $user = $userModel->getUserByEmail($email);
 
+    if ($user['is_verified'] === 0) {
+      http_response_code(403);
+      echo json_encode(['error' => 'Account not verified. Please check your email to activate your account.']);
+      return;
+    }
 
-    // todo need to change this for correct checking, uncomment it
-    // if ($user && password_verify($password, $user['password'])) {
-    if ($user && $password) {
+    // ? need to change this for correct checking, uncomment it
+    if ($user && password_verify($password, $user['password'])) {
+      // if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
@@ -127,7 +141,7 @@ function login($pdo)
       unset($user['password']);
 
       //storing token 
-      $userModel->storeToken($userData['user_id'], $token);
+      $userModel->storeToken($userData['user_id'], $token, "JWT");
 
       setcookie('access_token', $token, [
         'expires' => time() + (3 * 60 * 60), // 3 hours
@@ -328,7 +342,7 @@ function passwordReset($pdo)
 
 // todo work in here  for email verification
 // user clicks link directed to localhost then it should make reques to verify with the token
-function verifyUserRequest($id, $pdo)
+function verifyUserRequest($user_id, $pdo)
 {
   // send OTP to email
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -344,7 +358,13 @@ function verifyUserRequest($id, $pdo)
     $secretKey = ucfirst(getenv('JWT_SECRET'));
 
     $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
-  
+
+    // store token in the data base with EMAIL_VERIFICATION TAG
+
+
+    $userModel = new UserModel($pdo);
+    $userModel->storeToken($user_id, $token, "EMAIL_VERIFICATION");
+
     // sendEmailVerification
     sendVerificationEmail($email, $token);
     // sendOtp($email);
@@ -353,60 +373,48 @@ function verifyUserRequest($id, $pdo)
 
 function verifyUser($token, $pdo)
 {
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token = $_GET['token'] ?? null;
+  // Ensure the request is a GET request
+  if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $token = basename($_SERVER['REQUEST_URI']);
 
+    // Check if token is missing
     if (!$token) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Token is missing']);
-        return;
+      http_response_code(400);
+      echo json_encode(['error' => 'Token is missing']);
+      return;
     }
-        // validate token
-    checkAuthToken($pdo, $token);
+    // Verify token
+    try {
+      $decodedToken = verifyToken($token);
+      $user_id = $decodedToken->user_id; // Use object property access
 
-    // decode token
+    } catch (Exception $e) {
+      http_response_code(401); // Unauthorized
+      echo json_encode(['error' => 'Invalid or expired token', 'message' => $e->getMessage()]);
+      return;
+    }
 
-    //!! todo work on this !!!!
-
-    // checkAuthToken($pdo, $token);
-
-    // validateToken($token, $pdo, );
-
-    // check token
     $userModel = new UserModel($pdo);
-    if ($userModel->verifyEmail($token)) {
+    $verificationResult = $userModel->verifyEmail($token, $user_id); // Pass the user_id
+
+    if ($verificationResult['status'] === 'success') {
+      // Email verified successfully
       http_response_code(200);
       echo json_encode(['message' => 'Email verified successfully']);
     } else {
+      // Email verification failed (e.g., token expired or already used)
       http_response_code(400);
-      echo json_encode(['error' => 'Failed to verify email!']);
+      echo json_encode(['error' => $verificationResult['message']]);
     }
+  } else {
+    // Invalid request method
+    http_response_code(405);
+    echo json_encode(['error' => 'Invalid request method. Only GET is allowed.']);
   }
 }
 
-// todo work on this
-function emailVerication($user_id, $pdo)
-{
-  if ($_SERVER['REQUEST_METHOD' === 'POST']) {
-    $jsonData = file_get_contents(filename: "php://input");
-    $data = json_decode($jsonData, true);
 
-    $email = $data['email'];
-
-    // generate 
-    $secretKey = ucfirst(getenv('JWT_SECRET'));
-
-    // $token = generateToken($user_id, $userData['role_name'], $secretKey);
-
-    //  function for sending verification_emaila
-    // store token to db with type "EMAIL_VERIFICATION"
-
-    // $userModel = new UserModel($pdo);
-    // $userModel->generateEmailVerificationToken();
-  }
-}
-
-// todo not working yet, needs testing and validation
+// TODO: not working yet, needs testing and validation
 function logout($user_id, $pdo)
 {
   // Handle logout logic, e.g., clearing session data

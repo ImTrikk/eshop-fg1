@@ -3,6 +3,7 @@
 
 function authorize($role, $request, $next)
 {
+
  // Check if the user is authenticated and has the correct role
  if (!isset($request['user']) || $request['user']->role !== $role) {
   http_response_code(403); // Forbidden
