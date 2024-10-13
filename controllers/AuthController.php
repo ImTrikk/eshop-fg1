@@ -361,11 +361,8 @@ function verifyUser($token, $pdo)
         echo json_encode(['error' => 'Token is missing']);
         return;
     }
-    
-    // validate token
+        // validate token
     checkAuthToken($pdo, $token);
-
-
 
     // decode token
 

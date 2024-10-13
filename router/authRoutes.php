@@ -29,6 +29,7 @@ function authRoutes($router, $pdo)
     // ====================== AUTHORIZATION ==================== //
 
     // sens email verification to the user
+    // working ---------
     $router->post('/auth/verify/request/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo) {
             authorize( 'Seller', $request, function($id) use($pdo) {
@@ -37,9 +38,8 @@ function authRoutes($router, $pdo)
         });
     });
 
-    $router->get('/auth/verify-email/{token}', function ($token) use ($pdo) {
-        // verifyUser($token, $pdo);
-        echo 'Test';
+    $router->get('/auth/verify-email/{token:[a-zA-Z0-9-_\.]+}', function($token)  use ($pdo) {
+        verifyUser($token, $pdo, );
     });
 
     $router->get('/test', function () {
