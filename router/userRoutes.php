@@ -14,11 +14,13 @@ function userRoutes($router, $pdo)
     // todo refactor code for authorization
     $router->get('/auth/user/profile/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-            authorize(['Buyer', 'Seller'], $id, function () use ($pdo, $id) {
+            // Modify the authorization logic to accept both 'Seller' and 'Buyer'
+            authorize(['Buyer', 'Seller'], $request, function ($request) use ($id, $pdo) {
                 userProfile($pdo, $id);
             });
         });
     });
+
 
     $router->post('/user/profile/update', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {

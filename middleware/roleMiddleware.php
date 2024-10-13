@@ -1,17 +1,23 @@
 <?php
 
 
-function authorize($role, $request, $next)
+function authorize($roles, $request, $next)
 {
+ // Ensure $roles is an array for flexibility
+ if (!is_array($roles)) {
+  $roles = [$roles];
+ }
 
- // Check if the user is authenticated and has the correct role
- if (!isset($request['user']) || $request['user']->role !== $role) {
+ // Check if the user is authenticated and has one of the correct roles
+ if (!isset($request['user']) || !in_array($request['user']->role, $roles)) {
   http_response_code(403); // Forbidden
   echo json_encode(['error' => 'Access denied']);
   exit();
  }
- return $next($request);
+
+ return $next($request); // Proceed to the next callback if authorized
 }
+
 
 function authorizeUser($request, $id, $next)
 {

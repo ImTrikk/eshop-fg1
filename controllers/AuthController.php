@@ -128,8 +128,8 @@ function login($pdo)
     }
 
     // ? need to change this for correct checking, uncomment it
-    if ($user && password_verify($password, $user['password'])) {
-      // if ($user && $password) {
+    // if ($user && password_verify($password, $user['password'])) {
+    if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
@@ -171,9 +171,12 @@ function login($pdo)
 function userProfile($pdo, $user_id)
 {
 
-  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+
     $userModel = new UserModel($pdo);
     $user_profile = $userModel->getUserProfile($user_id);
+
+    print_r("In user profile route");
 
     http_response_code(200);
     echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
