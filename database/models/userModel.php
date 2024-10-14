@@ -94,6 +94,11 @@ class UserModel
         }
     }
 
+    // work on here
+    public function updateProfile($email){
+        
+    }
+
     public function verifyEmail($token, $user_id)
     {
         // Update the user's record in the database to verify email
@@ -235,7 +240,6 @@ class UserModel
         // Fetch and return the cart details
         return $stmt->fetchAll(PDO::FETCH_ASSOC); // Changed to fetchAll to get all items in the cart
     }
-
 
     public function storeToken($user_id, $token, $token_type)
     {

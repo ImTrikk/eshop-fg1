@@ -3,14 +3,6 @@
 function userRoutes($router, $pdo)
 {
     // ====================== USER PROFILE MANAGEMENT ==================== //
-    // $router->get('/auth/user/profile/{id}', function ($id) use ($pdo) {
-    //     authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-    //         authorizeUser($request, $id, function () use ($pdo, $id) {
-    //             userProfile($pdo, $id);
-    //         });
-    //     });
-    // });
-
     $router->get('/auth/user/profile/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {        
             authorize(['Admin', 'Buyer', 'Seller'], $request, function ($request) use ($id, $pdo) {
@@ -44,10 +36,10 @@ function userRoutes($router, $pdo)
     });
 
 
-    $router->post('/user/profile/update', function ($id) use ($pdo) {
+    $router->post('/user/profile/update/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {
             authorizeUser($request, $id, function () use ($pdo, $id) {
-                // update user profile logic here
+                // update
             });
         });
     });

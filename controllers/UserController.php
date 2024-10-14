@@ -3,7 +3,7 @@
 function addAddress($pdo)
 {
  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $jsonData = file_get_contents(filename: "php://input"); 
+  $jsonData = file_get_contents(filename: "php://input");
   $data = json_decode($jsonData, true);
 
   $email = $data['email'];
@@ -11,13 +11,22 @@ function addAddress($pdo)
 
   $userModel = new UserModel($pdo);
 
-  $insert = $userModel->addAdress($email, $address);
+  // $insert = $userModel->addAdress($email, $address);
 
  }
 }
 
-function updateAddress(){
- if($_SERVER['REQUEST_METHOD'] === 'PUT'){
+function updateProfile()
+{
+ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $jsonData = file_get_contents(filename: "php://input");
+  $data = json_decode($jsonData, true);
+ }
+}
+
+function updateAddress()
+{
+ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
  }
 }

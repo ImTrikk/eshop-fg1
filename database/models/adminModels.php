@@ -18,5 +18,8 @@ class AdminModels
   $stmt = $this->pdo->prepare($sql);
   $stmt->execute();
   return $stmt->fetchAll(PDO::FETCH_ASSOC); // Return the cart items
+  // todo add limitations [30]
+  // todo add pagination for 31-40 ------
+  // todo add params
  }
 }

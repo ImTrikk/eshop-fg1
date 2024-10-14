@@ -43,7 +43,7 @@ function authRoutes($router, $pdo)
 
     $router->post('/auth/role/assign', function () use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo) {
-            authorize('Buyer', $request, function ($request) use ($pdo) {
+            authorize('Admin', $request, function ($request) use ($pdo) {
                 assignRole($pdo);
             });
         });
