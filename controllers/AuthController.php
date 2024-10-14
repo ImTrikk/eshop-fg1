@@ -13,9 +13,7 @@ function register($pdo)
   try {
     // Check if the form is submitted via POST request
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-      // Retrieve the raw POST data
       $jsonData = file_get_contents("php://input");
-      // Decode the JSON data into an associative array
       $data = json_decode($jsonData, true);
 
       // Extract data from JSON
@@ -39,6 +37,17 @@ function register($pdo)
       // Validate user data
       $errors = validateUser($userData);
 
+      // check email exist in db
+      $userModel = new UserModel($pdo);
+      $emailExist = $userModel->checkEmailExist($email);
+
+      if ($emailExist) {
+        // If the email exists, return an error response
+        http_response_code(400); // Bad Request
+        echo json_encode(['error' => 'Email already exists!']);
+        return;
+      }
+
       if (!empty($errors)) {
         echo json_encode(["errors" => $errors]);
         return;
@@ -48,7 +57,6 @@ function register($pdo)
       $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
       try {
-        $userModel = new userModel(pdo: $pdo);
         $registeredUser = $userModel->registerUser($userData, $hashedPassword);
 
         $secretKey = ucfirst(getenv('JWT_SECRET'));
@@ -170,18 +178,14 @@ function login($pdo)
 
 function userProfile($pdo, $user_id)
 {
-
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $userModel = new UserModel($pdo);
     $user_profile = $userModel->getUserProfile($user_id);
 
-    print_r("In user profile route");
-
     http_response_code(200);
     echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
   }
-
 }
 
 function assignRole($pdo)
@@ -342,9 +346,6 @@ function passwordReset($pdo)
   }
 }
 
-
-// todo work in here  for email verification
-// user clicks link directed to localhost then it should make reques to verify with the token
 function verifyUserRequest($user_id, $pdo)
 {
   // send OTP to email
@@ -363,8 +364,6 @@ function verifyUserRequest($user_id, $pdo)
     $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
 
     // store token in the data base with EMAIL_VERIFICATION TAG
-
-
     $userModel = new UserModel($pdo);
     $userModel->storeToken($user_id, $token, "EMAIL_VERIFICATION");
 

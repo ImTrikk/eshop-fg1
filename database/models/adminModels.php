@@ -15,7 +15,6 @@ class AdminModels
  public function getAllUsers($pdo)
  {
   $sql = "SELECT first_name, last_name from users";
-
   $stmt = $this->pdo->prepare($sql);
   $stmt->execute();
   return $stmt->fetchAll(PDO::FETCH_ASSOC); // Return the cart items

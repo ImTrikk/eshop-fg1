@@ -34,7 +34,6 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC); // Return user details including user_id and name
     }
 
-
     public function getUserByEmail($email)
     {
         $sql = "SELECT email, password, is_verified FROM users WHERE email = :email";
@@ -42,7 +41,6 @@ class UserModel
         $stmt->execute([':email' => $email]);
         return $stmt->fetch(PDO::FETCH_ASSOC); // This returns an associative array
     }
-
 
     public function checkEmailExist($email)
     {
@@ -226,7 +224,6 @@ class UserModel
             throw $e;
         }
     }
-
 
     public function logoutModel($user_id)
     {

@@ -30,7 +30,7 @@ function authorizeUser($request, $id, $next)
  }
 
  // Extract the user_id from the JWT (attached by authenticate middleware)
- $tokenUserId = $request['user']->userId; // Correct key in the JWT token
+ $tokenUserId = $request['user']->user_id; // Correct key in the JWT token
 
  // Compare the user_id from the URL ($id) with the user_id from the JWT token
  if ($id !== $tokenUserId) {

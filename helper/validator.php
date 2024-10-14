@@ -20,16 +20,10 @@ function validateUser($data)
   }
 
   // Validate email
-//  
   if (empty($data['email'])) {
     $errors[] = 'Email is required.';
   } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
     $errors[] = 'Invalid email format.';
-  } else {
-    // Check if email already exists in the database (pseudo-code)
-    // if (emailExists($data['email'])) {
-    //     $errors[] = 'Email already exists.';
-    // }
   }
 
   // Validate password
