@@ -12,43 +12,65 @@ class UserModel
 
     public function registerUser($userData, $hashedPassword)
     {
+        // Prepare the SQL statement
         $sql = "INSERT INTO users (first_name, last_name, contacts, email, password, date_of_birth, role_id) 
         VALUES (:first_name, :last_name, :contacts, :email, :password, :date_of_birth, :role_id)";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':first_name' => $userData['first_name'],
-            ':last_name' => $userData['last_name'],
-            ':contacts' => $userData['contacts'],
-            ':email' => $userData['email'],
-            ':password' => $hashedPassword,
-            ':date_of_birth' => $userData['date_of_birth'],
-            ':role_id' => 1 // make user sa buyer
-        ]);
+
+        // Bind the parameters
+        $stmt->bindParam(':first_name', $userData['first_name']);
+        $stmt->bindParam(':last_name', $userData['last_name']);
+        $stmt->bindParam(':contacts', $userData['contacts']);
+        $stmt->bindParam(':email', $userData['email']);
+        $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':date_of_birth', $userData['date_of_birth']);
+        $roleId = 1; // Static value for role_id (buyer role)
+        $stmt->bindParam(':role_id', $roleId, PDO::PARAM_INT);
+
+        // Execute the statement
+        $stmt->execute();
 
         // Fetch the user details
-        // fetch the role name
-        $stmt = $this->pdo->prepare("SELECT user_id, role_name, CONCAT(first_name, ' ', last_name) AS name, email FROM users inner join roles rl on users.role_id = rl.role_id WHERE email = :email");
-        $stmt->execute([':email' => $userData['email']]);
+        $stmt = $this->pdo->prepare("SELECT user_id, role_name, CONCAT(first_name, ' ', last_name) AS name, email 
+            FROM users 
+            INNER JOIN roles rl ON users.role_id = rl.role_id 
+            WHERE email = :email");
+        $stmt->bindParam(':email', $userData['email']);
+        $stmt->execute();
 
         // Fetch the data
         return $stmt->fetch(PDO::FETCH_ASSOC); // Return user details including user_id and name
     }
 
+
     public function getUserByEmail($email)
     {
         $sql = "SELECT email, password, is_verified FROM users WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $email]);
+        // Bind the parameter
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+        // Execute the statement
+        $stmt->execute();
+        // Fetch and return the data
         return $stmt->fetch(PDO::FETCH_ASSOC); // This returns an associative array
     }
+
 
     public function checkEmailExist($email)
     {
         $sql = "SELECT email FROM users WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $email]);
+
+        // Bind the parameter
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+
+        // Execute the statement
+        $stmt->execute();
+
+        // Fetch and return the data
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
 
     public function updatePassword($email, $password)
     {
@@ -74,20 +96,47 @@ class UserModel
 
     public function verifyEmail($token, $user_id)
     {
-
         // Update the user's record in the database to verify email
         $updateSql = "UPDATE users SET is_verified = 1 WHERE user_id = :user_id";
         $updateStmt = $this->pdo->prepare($updateSql);
-        $updateStmt->execute([':user_id' => $user_id]);
 
+        // Bind the user_id parameter
+        $updateStmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+        // Execute the update statement
+        $updateStmt->execute();
+
+        // Prepare the delete statement for user tokens
         $deleteSql = "DELETE FROM user_tokens WHERE token = :token";
         $deleteStmt = $this->pdo->prepare($deleteSql);
-        $deleteStmt->execute([':token' => $token]);
+
+        // Bind the token parameter
+        $deleteStmt->bindParam(':token', $token, PDO::PARAM_STR);
+
+        // Execute the delete statement
+        $deleteStmt->execute();
 
         // Return success response
         return ['status' => 'success', 'message' => 'Email successfully verified.'];
     }
 
+    public function getUserData($email)
+    {
+        $sql = "SELECT user_id, email, first_name, last_name, contacts, rl.role_name 
+            FROM users 
+            INNER JOIN roles rl ON rl.role_id = users.role_id 
+            WHERE email = :email";
+        $stmt = $this->pdo->prepare($sql);
+
+        // Bind the parameter
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+
+        // Execute the statement
+        $stmt->execute();
+
+        // Fetch and return the data
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
     public function addAdress($user_id, $shipping_address)
     {
@@ -97,23 +146,18 @@ class UserModel
 
     }
 
-    public function getUserData($email)
-    {
-        $sql = "SELECT user_id, email, first_name, last_name, contacts, rl.role_name FROM users inner join roles rl on rl.role_id = users.role_id WHERE email = :email";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
     public function assignUserRole($email, $role_id)
     {
         // Update the user's role_id based on their email in the users table
         $sql = "UPDATE users SET role_id = :role_id WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':email' => $email,
-            ':role_id' => $role_id
-        ]);
+
+        // Bind parameters
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+        $stmt->bindParam(':role_id', $role_id, PDO::PARAM_INT);
+
+        // Execute the update statement
+        $stmt->execute();
 
         // Check if any rows were updated
         if ($stmt->rowCount() === 0) {
@@ -126,22 +170,30 @@ class UserModel
             INNER JOIN roles r ON u.role_id = r.role_id
             WHERE u.email = :email";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $email]);
+
+        // Bind the email parameter for the select statement
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+
+        // Execute the select statement
+        $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
 
     public function revokeUserRole($email, $role)
     {
         // Update the user's role
         $sql = "UPDATE users SET role_id = :role_id WHERE email = :email";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':email' => $email,
-            ':role_id' => $role
-        ]);
 
+        // Bind parameters
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+        $stmt->bindParam(':role_id', $role, PDO::PARAM_INT);
+
+        // Execute the update statement
+        $stmt->execute();
+
+        // Return whether any rows were affected
         return $stmt->rowCount() > 0;
     }
 
@@ -149,26 +201,41 @@ class UserModel
     {
         $sql = "SELECT user_id, CONCAT(first_name, ' ', last_name) AS name, email, contacts FROM users WHERE user_id = :user_id";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':user_id' => $user_id]);
 
+        // Bind the parameter
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+        // Execute the statement
+        $stmt->execute();
+
+        // Fetch the user profile
         $userProfile = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $userProfile;
     }
 
+
     public function getUserCart($email)
     {
         $sql = "SELECT crt.cart_id, prod.product_name, prod.price, crt.quantity
-          from 
-           cart crt 
-               inner join products prod on prod.product_id = crt.product_id
-               inner join users usr on usr.user_id = crt.user_id
-               inner join roles rl on rl.role_id = usr.role_id and email = :email";
+            FROM cart crt 
+            INNER JOIN products prod ON prod.product_id = crt.product_id
+            INNER JOIN users usr ON usr.user_id = crt.user_id
+            INNER JOIN roles rl ON rl.role_id = usr.role_id
+            WHERE usr.email = :email"; // Moved email condition to WHERE clause
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Bind the parameter
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+
+        // Execute the statement
+        $stmt->execute();
+
+        // Fetch and return the cart details
+        return $stmt->fetchAll(PDO::FETCH_ASSOC); // Changed to fetchAll to get all items in the cart
     }
+
 
     public function storeToken($user_id, $token, $token_type)
     {
