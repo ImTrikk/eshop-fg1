@@ -8,7 +8,7 @@ require 'helper/tokenHelper.php';
 require 'helper/otpHelper.php';
 require_once(__DIR__ . '/../database/models/userModel.php');
 
-function register($pdo)
+function register($pd
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -86,8 +86,11 @@ function login($pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+      // Start the session
+      session_start();
+
       // Get JSON data from the request
-      $jsonData = file_get_contents(filename: "php://input");
+      $jsonData = file_get_contents("php://input");
       $data = json_decode($jsonData, true);
 
       $email = $data['email'] ?? '';
@@ -98,7 +101,7 @@ function login($pdo)
         'password' => $data['password']
       ];
 
-      // validate
+      // Validate input
       $error = validateLogin($userData);
 
       if (!empty($error)) {
@@ -108,19 +111,12 @@ function login($pdo)
       }
 
       // Initialize UserModel
-      $userModel = new userModel(pdo: $pdo);
+      $userModel = new userModel($pdo);
       $emailExist = $userModel->checkEmailExist($email);
 
       if (!$emailExist) {
-        http_response_code(404); // Bad Request
+        http_response_code(404);
         echo json_encode(["error" => "Email does not exist!"]);
-        return;
-      }
-
-      // Basic validation
-      if (empty($email) || empty($password)) {
-        http_response_code(400); // Bad Request
-        echo json_encode(["error" => "Email and password are required!"]);
         return;
       }
 
@@ -133,23 +129,24 @@ function login($pdo)
         return;
       }
 
-      // ? need to change this for correct checking, uncomment it, [other users have no hashed password]
+      // Verify password
       if ($user && password_verify($password, $user['password'])) {
-        // if ($user && $password) {
         // Fetch additional user data (excluding the password)
         $userData = $userModel->getUserData($email);
 
-        $secretKey = ucfirst(getenv('JWT_SECRET'));
+        // Start session and store user ID
+        $_SESSION['user_id'] = $userData['user_id'];
 
+        $secretKey = ucfirst(getenv('JWT_SECRET'));
         $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
 
         unset($userData['password']);
         unset($user['password']);
 
-        //storing token 
+        // Storing token 
         $userModel->storeToken($userData['user_id'], $token, "JWT");
 
-        // set cookie with access_token
+        // Set cookie with access_token
         setcookie('access_token', $token, [
           'expires' => time() + (3 * 60 * 60), // 3 hours
           'httponly' => true,                  // Ensures the cookie is only sent over HTTP(S)
@@ -157,7 +154,7 @@ function login($pdo)
         ]);
 
         // Successful login response
-        http_response_code(200); // OK
+        http_response_code(200);
         echo json_encode([
           "message" => "Login successful!",
           "user" => $userData,
@@ -165,23 +162,22 @@ function login($pdo)
         ]);
       } else {
         // Failed login
-        http_response_code(401); // Unauthorized
+        http_response_code(401);
         echo json_encode(["error" => "Invalid email or password!"]);
       }
     } catch (PDOException $e) {
       // Handle database-related errors
-      http_response_code(500); // Internal Server Error
+      http_response_code(500);
       echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     } catch (Exception $e) {
-      http_response_code(500); // Internal Server Error
+      http_response_code(500);
       echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
   } else {
-    http_response_code(response_code: 405); // Method Not Allowed
+    http_response_code(405); // Method Not Allowed
     echo json_encode(["error" => "Invalid request method!"]);
   }
 }
-
 
 function userProfile($pdo, $user_id)
 {
@@ -405,32 +401,37 @@ function verifyUserRequest($user_id, $pdo)
 {
   // send OTP to email
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $jsonData = file_get_contents(filename: "php://input");
-    $data = json_decode($jsonData, true);
+    try {
+      $jsonData = file_get_contents(filename: "php://input");
+      $data = json_decode($jsonData, true);
 
-    $email = $data['email'];
+      $email = $data['email'];
 
-    $error = validateEmail($email);
-    if (!empty($error)) {
-      http_response_code(400);
-      echo json_encode(["errors" => $error]);
-      return;
+      $error = validateEmail($email);
+      if (!empty($error)) {
+        http_response_code(400);
+        echo json_encode(["errors" => $error]);
+        return;
+      }
+
+      $userModel = new UserModel($pdo);
+      $userData = $userModel->getUserData($email);
+
+      // get secret key
+      $secretKey = ucfirst(getenv('JWT_SECRET'));
+
+      $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
+
+      // store token in the data base with EMAIL_VERIFICATION TAG
+      $userModel = new UserModel($pdo);
+      $userModel->storeToken($user_id, $token, "EMAIL_VERIFICATION");
+
+      // sendEmailVerification
+      sendVerificationEmail($email, $token);
+    } catch (Exception $e) {
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
-
-    $userModel = new UserModel($pdo);
-    $userData = $userModel->getUserData($email);
-
-    // get secret key
-    $secretKey = ucfirst(getenv('JWT_SECRET'));
-
-    $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
-
-    // store token in the data base with EMAIL_VERIFICATION TAG
-    $userModel = new UserModel($pdo);
-    $userModel->storeToken($user_id, $token, "EMAIL_VERIFICATION");
-
-    // sendEmailVerification
-    sendVerificationEmail($email, $token);
   }
 }
 
@@ -484,23 +485,28 @@ function verifyUser($token, $pdo)
   }
 }
 
-
-// TODO: not working yet, needs testing and validation
-function logout($user_id, $pdo)
+function logout()
 {
-  // Handle logout logic, e.g., clearing session data
-  session_start();
-  session_destroy();
-
-  $userModel = new UserModel($pdo);
-  $userModel->logoutModel($user_id);
-
-  echo json_encode(["message" => "Logged out successfully!"]);
-}
-
-function profileUpload($user_id, $pdo)
-{
+  // Check if the request method is POST
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // GET FILE UPLOAD 
+    // Start the session
+    session_start();
+
+    // Remove the access token from the cookie
+    if (isset($_COOKIE['access_token'])) {
+      // Expire the cookie
+      setcookie('access_token', '', time() - 3600, '/'); // Set expiration in the past
+    }
+
+    // Clear any session data if applicable
+    unset($_SESSION['user_id']); // Remove user ID from session
+    session_destroy(); // Destroy the session
+
+    // Return success response
+    http_response_code(200); // OK
+    echo json_encode(["message" => "Logout successful!"]);
+  } else {
+    http_response_code(405); // Method Not Allowed
+    echo json_encode(["error" => "Invalid request method!"]);
   }
 }

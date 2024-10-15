@@ -42,7 +42,6 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC); // Return user details including user_id and name
     }
 
-
     public function getUserByEmail($email)
     {
         $sql = "SELECT email, password, is_verified FROM users WHERE email = :email";
@@ -54,7 +53,6 @@ class UserModel
         // Fetch and return the data
         return $stmt->fetch(PDO::FETCH_ASSOC); // This returns an associative array
     }
-
 
     public function checkEmailExist($email)
     {
@@ -70,7 +68,6 @@ class UserModel
         // Fetch and return the data
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
 
     public function updatePassword($email, $password)
     {
@@ -95,9 +92,38 @@ class UserModel
     }
 
     // work on here
-    public function updateProfile($email){
-        
+    public function updateProfile($data, $user_id)
+    {
+        try {
+            // Prepare the SQL statement to update first_name, last_name, contacts, and password (if needed)
+            $stmt = $this->pdo->prepare("
+            UPDATE users 
+            SET first_name = :first_name, 
+                last_name = :last_name, 
+                contacts = :contacts 
+            WHERE email = :email 
+            AND user_id = :user_id
+        ");
+
+            // Bind the parameters
+            $stmt->bindParam(':first_name', $data['first_name'], PDO::PARAM_STR);
+            $stmt->bindParam(':last_name', $data['last_name'], PDO::PARAM_STR);
+            $stmt->bindParam(':contacts', $data['contacts'], PDO::PARAM_STR);
+            $stmt->bindParam(':email', $data['email'], PDO::PARAM_STR);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+
+            // Execute the query
+            if ($stmt->execute()) {
+                return ['status' => 'success', 'message' => 'Profile updated successfully'];
+            } else {
+                return ['status' => 'error', 'message' => 'Failed to update the profile'];
+            }
+        } catch (PDOException $e) {
+            // Handle any errors
+            return ['status' => 'error', 'message' => 'Error: ' . $e->getMessage()];
+        }
     }
+
 
     public function verifyEmail($token, $user_id)
     {
@@ -296,11 +322,20 @@ class UserModel
         }
     }
 
+
     public function logoutModel($user_id)
     {
         $sql = 'DELETE * from tokens where user_id = :user_id';
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':email' => $user_id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function invalidateToken($userId)
+    {
+        // Assuming you have a tokens table to store the tokens
+        $stmt = $this->pdo->prepare("UPDATE user_tokens SET is_valid = 0 WHERE user_id = :userId");
+        $stmt->bindParam(':userId', $userId);
+        $stmt->execute();
     }
 }

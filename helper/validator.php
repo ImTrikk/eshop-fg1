@@ -97,11 +97,9 @@ function validateRole($data)
   return $errors;
 }
 
-
 function validateResetPassword($data)
 {
   $errors = [];
-
   // Validate OTP
   if (empty($data['otp'])) {
     $errors['otp'] = 'OTP is required';
@@ -165,6 +163,28 @@ function validateEmail($email)
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
       $errors['email'] = 'Invalid email format';
     }
+  }
+
+  return $errors;
+}
+
+
+function validateUpdateProfile($data){
+
+  $errors = [];
+
+  if (empty($data['first_name'])) {
+    echo $data['first_name'];
+    $errors[] = 'First name is required.';
+  } elseif (!preg_match("/^[a-zA-Z '-]+$/", $data['first_name'])) {
+    $errors[] = 'First name can only contain letters, apostrophes, and hyphens.';
+  }
+
+  // Validate last name
+  if (empty($data['last_name'])) {
+    $errors[] = 'Last name is required.';
+  } elseif (!preg_match("/^[a-zA-Z'-]+$/", $data['last_name'])) {
+    $errors[] = 'Last name can only contain letters, apostrophes, and hyphens.';
   }
 
   return $errors;

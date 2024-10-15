@@ -3,6 +3,7 @@
 require_once 'router/authRoutes.php';
 require_once 'router/userRoutes.php';
 require_once 'controllers/AuthController.php';
+require_once 'controllers/UserController.php';
 // require_once 'router/productRoutes.php';
 require_once 'router/adminRoutes.php';
 require_once 'controllers/productController.php';

@@ -4,7 +4,7 @@ function userRoutes($router, $pdo)
 {
     // ====================== USER PROFILE MANAGEMENT ==================== //
     $router->get('/auth/user/profile/{id}', function ($id) use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo, $id) {        
+        authenticate($_REQUEST, function ($request) use ($pdo, $id) {
             authorize(['Admin', 'Buyer', 'Seller'], $request, function ($request) use ($id, $pdo) {
                 // Ensure that non-admin users can only access their own profile
                 if ($request['user']->role !== 'Admin') {
@@ -35,47 +35,14 @@ function userRoutes($router, $pdo)
         });
     });
 
-
+    // request first
     $router->post('/user/profile/update/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-            authorizeUser($request, $id, function () use ($pdo, $id) {
-                // update
+            authorize(['Admin', 'Seller', 'Buyer'], $request, function ($request) use ($pdo, $id) {
+                authorizeUser($request, $id, function ($request) use ($pdo, $id) {
+                    updateProfile($id, $pdo);
+                });
             });
         });
-    });
-
-    // Shipping address routes
-    $router->post('/user/address/add', function ($id) use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-            authorize('Buyer', $request, function () use ($pdo, $id) {
-                addAddress($pdo);
-            });
-        });
-    });
-
-    $router->post('/user/address/update', function ($id) use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-            authorizeUser($request, $id, function () use ($pdo, $id) {
-                // update user address logic here
-            });
-        });
-    });
-
-    $router->post('/user/address/remove', function ($id) use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-            authorizeUser($request, $id, function () use ($pdo, $id) {
-                // remove user address logic here
-            });
-        });
-    });
-
-    // Photo upload
-    $router->post('/user/photo/upload', function ($id) use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo, $id) {
-            authorizeUser($request, $id, function () use ($pdo, $id) {
-                // upload user photo logic here
-            });
-        });
-    });
-
+    }); 
 }

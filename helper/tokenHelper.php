@@ -22,10 +22,6 @@ function generateToken($user_id, $role_name, $secretKey)
     return JWT::encode($payload, $secretKey, 'HS256');
 }
 
-// require_once 'database/Database.php';
-
-
-// Middleware to check Bearer token and extract user ID
 function checkAuthToken($pdo, $id)
 {
     $headers = getallheaders();
@@ -57,7 +53,6 @@ function checkAuthToken($pdo, $id)
     }
 }
 
-// Validate the token and return the user ID
 function validateToken($token, $pdo, $user_id)
 {
     $secretKey = ucfirst(getenv('JWT_SECRET')); // Your secret key from env
@@ -92,16 +87,27 @@ function validateToken($token, $pdo, $user_id)
     }
 }
 
-
-// Optional: Check if the token is in the database
 function isTokenInDatabase($pdo, $userId, $token)
 {
-    $stmt = $pdo->prepare('SELECT token FROM user_tokens WHERE user_id = :user_id AND token = :token');
-    $stmt->execute([':user_id' => $userId, ':token' => $token]);
-    return $stmt->fetch() !== false;
-}
+    try {
+        // Prepare the SQL statement with placeholders for parameters
+        $stmt = $pdo->prepare('SELECT token FROM user_tokens WHERE user_id = :user_id AND token = :token');
 
-// verifying token
+        // Bind parameters using bindParam
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_STR); // user_id is a UUID, treated as a string
+        $stmt->bindParam(':token', $token, PDO::PARAM_STR);    // Assuming token is a string
+
+        // Execute the statement
+        $stmt->execute();
+
+        // Fetch the result; returns false if no rows are found
+        return $stmt->fetch() !== false;
+    } catch (PDOException $e) {
+        // Handle error (e.g., log it or rethrow it)
+        error_log('Database query error: ' . $e->getMessage());
+        return false; // Or handle it in another way, depending on your application logic
+    }
+}
 
 function verifyToken($token)
 {
@@ -122,5 +128,10 @@ function verifyToken($token)
         http_response_code(401); // Unauthorized
         return json_encode(['error' => 'Invalid token: ' . $e->getMessage()]);
     }
+}
+
+function invalidateToken($token)
+{
+    
 }
 
