@@ -8,7 +8,7 @@ require 'helper/tokenHelper.php';
 require 'helper/otpHelper.php';
 require_once(__DIR__ . '/../database/models/userModel.php');
 
-function register($pd
+function register($pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
