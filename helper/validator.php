@@ -1,6 +1,8 @@
 <?php
 
-function validateUser($data)
+// not using libraries due to no dynamic error messages
+
+function validateRegistration($data)
 {
   $errors = [];
 

@@ -35,7 +35,7 @@ function register($pdo)
       ];
 
       // Validate user data
-      $errors = validateUser($userData);
+      $errors = validateRegistration($userData);
 
       // check email exist in db
       $userModel = new UserModel($pdo);
@@ -49,6 +49,7 @@ function register($pdo)
       }
 
       if (!empty($errors)) {
+        http_response_code(403);
         echo json_encode(["errors" => $errors]);
         return;
       }
@@ -71,7 +72,7 @@ function register($pdo)
           "user" => $registeredUser
         ]);
       } catch (PDOException $e) {
-        http_response_code(500);
+        http_response_code(400);
         echo json_encode(["error" => "Registration failed: " . $e->getMessage()]);
       }
     }
@@ -103,6 +104,7 @@ function login($pdo)
     $error = validateLogin($userData);
 
     if (!empty($error)) {
+      http_response_code(400);
       echo json_encode(["errors" => $error]);
       return;
     }
@@ -136,8 +138,8 @@ function login($pdo)
     }
 
     // ? need to change this for correct checking, uncomment it
-    // if ($user && password_verify($password, $user['password'])) {
-    if ($user && $password) {
+    if ($user && password_verify($password, $user['password'])) {
+      // if ($user && $password) {
       // Fetch additional user data (excluding the password)
       $userData = $userModel->getUserData($email);
 
@@ -176,13 +178,20 @@ function login($pdo)
   }
 }
 
+// todo refactor code 
 function userProfile($pdo, $user_id)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
+
     $userModel = new UserModel($pdo);
     $user_profile = $userModel->getUserProfile($user_id);
 
+    if ($user_profile === null) {
+      http_response_code(404); // Not Found
+      echo json_encode(['error' => 'User profile not found']);
+      return;
+    }
     http_response_code(200);
     echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
   }
@@ -190,57 +199,54 @@ function userProfile($pdo, $user_id)
 
 function assignRole($pdo)
 {
-  try {
-    // Check if the request method is POST
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      http_response_code(405); // Method Not Allowed
-      echo json_encode(['error' => 'Invalid request method. Only POST is allowed.']);
-      return;
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+      // Retrieve JSON data from the request body
+      $jsonData = file_get_contents("php://input");
+      $data = json_decode($jsonData, true);
+
+      // Validate that the required fields are present
+      // todo refactor this later
+      if (empty($data['email'])) {
+        http_response_code(400); // Bad Request
+        echo json_encode(['error' => 'Email is required.']);
+        return;
+      }
+
+      if (empty($data['role'])) {
+        http_response_code(400); // Bad Request
+        echo json_encode(['error' => 'Role is required.']);
+        return;
+      }
+
+      $email = $data['email'];
+      $role = $data['role'];
+
+      // todo add validation
+
+      // Initialize UserModel and attempt to assign role
+      $userModel = new UserModel($pdo);
+      $user = $userModel->assignUserRole($email, $role);
+
+      if (!$user) {
+        http_response_code(404); // Not Found
+        echo json_encode(['error' => 'User not found or role assignment failed.']);
+        return;
+      }
+
+      // If successful, return a success message
+      http_response_code(201); // Created
+      echo json_encode(['message' => "Assigned role to user successfully", 'User' => $user]);
+
+    } catch (PDOException $e) {
+      // Handle database-related errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    } catch (Exception $e) {
+      // Handle general errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
-
-    // Retrieve JSON data from the request body
-    $jsonData = file_get_contents("php://input");
-    $data = json_decode($jsonData, true);
-
-    // Validate that the required fields are present
-    // todo refactor this later
-    if (empty($data['email'])) {
-      http_response_code(400); // Bad Request
-      echo json_encode(['error' => 'Email is required.']);
-      return;
-    }
-
-    if (empty($data['role'])) {
-      http_response_code(400); // Bad Request
-      echo json_encode(['error' => 'Role is required.']);
-      return;
-    }
-
-    $email = $data['email'];
-    $role = $data['role'];
-
-    // Initialize UserModel and attempt to assign role
-    $userModel = new UserModel($pdo);
-    $user = $userModel->assignUserRole($email, $role);
-
-    if (!$user) {
-      http_response_code(404); // Not Found
-      echo json_encode(['error' => 'User not found or role assignment failed.']);
-      return;
-    }
-
-    // If successful, return a success message
-    http_response_code(201); // Created
-    echo json_encode(['message' => "Assigned role to user successfully", 'User' => $user]);
-
-  } catch (PDOException $e) {
-    // Handle database-related errors
-    http_response_code(500); // Internal Server Error
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-  } catch (Exception $e) {
-    // Handle general errors
-    http_response_code(500); // Internal Server Error
-    echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
   }
 }
 
@@ -254,7 +260,14 @@ function revokeRole($pdo)
       $email = $data['email'];
       $role = $data['role'];
 
+      $data = [
+        'email' => $email,
+        'role$' => $role
+      ];
+
       //todo add validation
+
+
 
       $userModel = new UserModel($pdo);
       $success = $userModel->revokeUserRole($email, $role);
