@@ -59,7 +59,6 @@ function validateLogin($data)
 {
   $errors = [];
 
-  // Check if email is present and valid
   if (empty($data['email'])) {
     $errors['email'] = 'Email is required.';
   } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
@@ -75,6 +74,29 @@ function validateLogin($data)
 
   return $errors;
 }
+
+function validateRole($data)
+{
+  $errors = [];
+
+  // Validate email
+  if (empty($data['email'])) {
+    $errors['email'] = 'Email is required.';
+  } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    $errors['email'] = 'Invalid email format.';
+  }
+
+  // Validate role
+  $validRoles = ['Seller', 'Buyer'];
+  if (empty($data['role'])) {
+    $errors['role'] = 'Role is required.';
+  } elseif (!in_array($data['role'], $validRoles)) {
+    $errors['role'] = 'Role must be either "Seller" or "Buyer".';
+  }
+
+  return $errors;
+}
+
 
 function validateResetPassword($data)
 {
@@ -135,6 +157,17 @@ function validateVerifyRequest($data)
 function validateEmail($email)
 {
   $errors = [];
+
+  if (empty($email)) {
+    $errors['email'] = 'Email is required';
+  } else {
+    // Check if the email is valid
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $errors['email'] = 'Invalid email format';
+    }
+  }
+
+  return $errors;
 }
 
 // Helper function to validate date format (YYYY-MM-DD)

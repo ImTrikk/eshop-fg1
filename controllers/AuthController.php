@@ -10,9 +10,9 @@ require_once(__DIR__ . '/../database/models/userModel.php');
 
 function register($pdo)
 {
-  try {
-    // Check if the form is submitted via POST request
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+      // Check if the form is submitted via POST request
       $jsonData = file_get_contents("php://input");
       $data = json_decode($jsonData, true);
 
@@ -75,125 +75,137 @@ function register($pdo)
         http_response_code(400);
         echo json_encode(["error" => "Registration failed: " . $e->getMessage()]);
       }
+    } catch (PDOException $e) {
+      http_response_code(500);
+      echo json_encode(["error" => "Internal Server Error " . $e->getMessage()]);
     }
-  } catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["error" => "Internal Server Error " . $e->getMessage()]);
   }
 }
 
 function login($pdo)
 {
-  // Check if the form is submitted via POST request
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get JSON data from the request
-    $jsonData = file_get_contents(filename: "php://input");
-    $data = json_decode($jsonData, true);
+    try {
+      // Get JSON data from the request
+      $jsonData = file_get_contents(filename: "php://input");
+      $data = json_decode($jsonData, true);
 
+      $email = $data['email'] ?? '';
+      $password = $data['password'] ?? '';
 
-    // todo add a validator for incoming email and password
+      $userData = [
+        'email' => $data['email'],
+        'password' => $data['password']
+      ];
 
-    $email = $data['email'] ?? '';
-    $password = $data['password'] ?? '';
+      // validate
+      $error = validateLogin($userData);
 
-    $userData = [
-      'email' => $data['email'],
-      'password' => $data['password']
-    ];
+      if (!empty($error)) {
+        http_response_code(400);
+        echo json_encode(["errors" => $error]);
+        return;
+      }
 
-    $error = validateLogin($userData);
+      // Initialize UserModel
+      $userModel = new userModel(pdo: $pdo);
+      $emailExist = $userModel->checkEmailExist($email);
 
-    if (!empty($error)) {
-      http_response_code(400);
-      echo json_encode(["errors" => $error]);
-      return;
-    }
+      if (!$emailExist) {
+        http_response_code(404); // Bad Request
+        echo json_encode(["error" => "Email does not exist!"]);
+        return;
+      }
 
-    // Initialize UserModel
-    $userModel = new userModel(pdo: $pdo);
-    // make request to check email exist in database
+      // Basic validation
+      if (empty($email) || empty($password)) {
+        http_response_code(400); // Bad Request
+        echo json_encode(["error" => "Email and password are required!"]);
+        return;
+      }
 
-    $emailExist = $userModel->checkEmailExist($email);
+      // Fetch user by email
+      $user = $userModel->getUserByEmail($email);
 
-    if (!$emailExist) {
-      http_response_code(404); // Bad Request
-      echo json_encode(["error" => "Email does not exist!"]);
-      return;
-    }
+      if ($user['is_verified'] === 0) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Account not verified. Please check your email to activate your account.']);
+        return;
+      }
 
-    // Basic validation
-    if (empty($email) || empty($password)) {
-      http_response_code(400); // Bad Request
-      echo json_encode(["error" => "Email and password are required!"]);
-      return;
-    }
+      // ? need to change this for correct checking, uncomment it, [other users have no hashed password]
+      if ($user && password_verify($password, $user['password'])) {
+        // if ($user && $password) {
+        // Fetch additional user data (excluding the password)
+        $userData = $userModel->getUserData($email);
 
-    // Fetch user by email
-    $user = $userModel->getUserByEmail($email);
+        $secretKey = ucfirst(getenv('JWT_SECRET'));
 
-    if ($user['is_verified'] === 0) {
-      http_response_code(403);
-      echo json_encode(['error' => 'Account not verified. Please check your email to activate your account.']);
-      return;
-    }
+        $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
 
-    // ? need to change this for correct checking, uncomment it
-    if ($user && password_verify($password, $user['password'])) {
-      // if ($user && $password) {
-      // Fetch additional user data (excluding the password)
-      $userData = $userModel->getUserData($email);
+        unset($userData['password']);
+        unset($user['password']);
 
-      $secretKey = ucfirst(getenv('JWT_SECRET'));
+        //storing token 
+        $userModel->storeToken($userData['user_id'], $token, "JWT");
 
-      $token = generateToken($userData['user_id'], $userData['role_name'], $secretKey);
+        // set cookie with access_token
+        setcookie('access_token', $token, [
+          'expires' => time() + (3 * 60 * 60), // 3 hours
+          'httponly' => true,                  // Ensures the cookie is only sent over HTTP(S)
+          'samesite' => 'Strict'               // Helps prevent CSRF attacks
+        ]);
 
-      unset($userData['password']);
-      unset($user['password']);
-
-      //storing token 
-      $userModel->storeToken($userData['user_id'], $token, "JWT");
-
-      setcookie('access_token', $token, [
-        'expires' => time() + (3 * 60 * 60), // 3 hours
-        'httponly' => true,                  // Ensures the cookie is only sent over HTTP(S)
-        'samesite' => 'Strict'               // Helps prevent CSRF attacks
-      ]);
-
-      // Successful login response
-      http_response_code(200); // OK
-      echo json_encode([
-        "message" => "Login successful!",
-        "user" => $userData,
-        "token" => $token // todo remove token later
-      ]);
-    } else {
-      // Failed login
-      http_response_code(401); // Unauthorized
-      echo json_encode(["error" => "Invalid email or password!"]);
+        // Successful login response
+        http_response_code(200); // OK
+        echo json_encode([
+          "message" => "Login successful!",
+          "user" => $userData,
+          "token" => $token
+        ]);
+      } else {
+        // Failed login
+        http_response_code(401); // Unauthorized
+        echo json_encode(["error" => "Invalid email or password!"]);
+      }
+    } catch (PDOException $e) {
+      // Handle database-related errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    } catch (Exception $e) {
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
   } else {
-    // Method not allowed
-    http_response_code(405); // Method Not Allowed
+    http_response_code(response_code: 405); // Method Not Allowed
     echo json_encode(["error" => "Invalid request method!"]);
   }
 }
 
-// todo refactor code 
+
 function userProfile($pdo, $user_id)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    try {
+      $userModel = new UserModel($pdo);
+      $user_profile = $userModel->getUserProfile($user_id);
 
+      if ($user_profile === null) {
+        http_response_code(404); // Not Found
+        echo json_encode(['error' => 'User profile not found']);
+        return;
+      }
 
-    $userModel = new UserModel($pdo);
-    $user_profile = $userModel->getUserProfile($user_id);
-
-    if ($user_profile === null) {
-      http_response_code(404); // Not Found
-      echo json_encode(['error' => 'User profile not found']);
-      return;
+      http_response_code(200);
+      echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
+    } catch (PDOException $e) {
+      // Handle database-related errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    } catch (Exception $e) {
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
-    http_response_code(200);
-    echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
   }
 }
 
@@ -206,7 +218,6 @@ function assignRole($pdo)
       $data = json_decode($jsonData, true);
 
       // Validate that the required fields are present
-      // todo refactor this later
       if (empty($data['email'])) {
         http_response_code(400); // Bad Request
         echo json_encode(['error' => 'Email is required.']);
@@ -222,7 +233,17 @@ function assignRole($pdo)
       $email = $data['email'];
       $role = $data['role'];
 
-      // todo add validation
+      $userData = [
+        'email' => $email,
+        'role' => $role
+      ];
+
+      $error = validateRole($userData);
+      if (!empty($error)) {
+        http_response_code(400);
+        echo json_encode(["errors" => $error]);
+        return;
+      }
 
       // Initialize UserModel and attempt to assign role
       $userModel = new UserModel($pdo);
@@ -230,7 +251,7 @@ function assignRole($pdo)
 
       if (!$user) {
         http_response_code(404); // Not Found
-        echo json_encode(['error' => 'User not found or role assignment failed.']);
+        echo json_encode(['error' => 'Role assignment failed.']);
         return;
       }
 
@@ -260,14 +281,17 @@ function revokeRole($pdo)
       $email = $data['email'];
       $role = $data['role'];
 
-      $data = [
+      $userData = [
         'email' => $email,
         'role$' => $role
       ];
 
-      //todo add validation
-
-
+      $error = validateRole($userData);
+      if (!empty($error)) {
+        http_response_code(400);
+        echo json_encode(["errors" => $error]);
+        return;
+      }
 
       $userModel = new UserModel($pdo);
       $success = $userModel->revokeUserRole($email, $role);
@@ -302,6 +326,14 @@ function passwordResetRequest()
 
     $email = $data['email'];
 
+    $error = validateEmail($email);
+
+    if (!empty($error)) {
+      http_response_code(400);
+      echo json_encode(["errors" => $error]);
+      return;
+    }
+
     sendOtp($email);
   }
 }
@@ -309,50 +341,60 @@ function passwordResetRequest()
 function passwordReset($pdo)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get JSON input
-    $jsonData = file_get_contents("php://input");
-    $data = json_decode($jsonData, true);
+    try {
+      // Get JSON input
+      $jsonData = file_get_contents("php://input");
+      $data = json_decode($jsonData, true);
 
-    // Extract data from the request
-    $otp = $data['otp'] ?? null;
-    $email = $data['email'] ?? null;
-    $password = $data['password'] ?? null;
+      // Extract data from the request
+      $otp = $data['otp'] ?? null;
+      $email = $data['email'] ?? null;
+      $password = $data['password'] ?? null;
 
-    // Validate inputs
-    if (!$otp || !$email || !$password) {
-      echo json_encode(['error' => 'Missing required fields']);
-      return;
-    }
+      // Validate inputs
+      if (!$otp || !$email || !$password) {
+        echo json_encode(['error' => 'Missing required fields']);
+        return;
+      }
 
-    $userReset = [
-      'otp' => $data['otp'],
-      'email' => $data['email'],
-      'password' => $data['password']
-    ];
+      $userReset = [
+        'otp' => $data['otp'],
+        'email' => $data['email'],
+        'password' => $data['password']
+      ];
 
-    $errors = validateResetPassword($userReset);
+      $errors = validateResetPassword($userReset);
+      if (!empty($errors)) {
+        echo json_encode(["errors" => $errors]);
+        return;
+      }
+      // Verify the OTP and stop execution if it fails
+      if (!verifyOtp($otp)) {
+        return; // Stop execution if OTP is invalid
+      }
 
-    if (!empty($errors)) {
-      echo json_encode(["errors" => $errors]);
-      return;
-    }
+      // Hash the new password
+      $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    // Verify the OTP and stop execution if it fails
-    if (!verifyOtp($otp)) {
-      return; // Stop execution if OTP is invalid
-    }
+      // Create an instance of UserModel
+      $userModel = new UserModel($pdo);
 
-    // Hash the new password
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-    // Create an instance of UserModel
-    $userModel = new UserModel($pdo);
-
-    // Update the password in the database
-    if ($userModel->updatePassword($email, $hashedPassword)) {
-      echo json_encode(['message' => 'Password updated successfully']);
-    } else {
-      echo json_encode(['error' => 'Failed to update password']);
+      // Update the password in the database
+      if ($userModel->updatePassword($email, $hashedPassword)) {
+        http_response_code(200);
+        echo json_encode(['message' => 'Password updated successfully']);
+      } else {
+        http_response_code(400);
+        echo json_encode(['error' => 'Failed to update password']);
+      }
+    } catch (PDOException $e) {
+      // Handle database-related errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    } catch (Exception $e) {
+      // Handle general errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
   } else {
     echo json_encode(['error' => 'Invalid request method']);
@@ -368,6 +410,13 @@ function verifyUserRequest($user_id, $pdo)
 
     $email = $data['email'];
 
+    $error = validateEmail($email);
+    if (!empty($error)) {
+      http_response_code(400);
+      echo json_encode(["errors" => $error]);
+      return;
+    }
+
     $userModel = new UserModel($pdo);
     $userData = $userModel->getUserData($email);
 
@@ -382,44 +431,51 @@ function verifyUserRequest($user_id, $pdo)
 
     // sendEmailVerification
     sendVerificationEmail($email, $token);
-    // sendOtp($email);
   }
 }
 
 function verifyUser($token, $pdo)
 {
-  // Ensure the request is a GET request
   if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $token = basename($_SERVER['REQUEST_URI']);
-
-    // Check if token is missing
-    if (!$token) {
-      http_response_code(400);
-      echo json_encode(['error' => 'Token is missing']);
-      return;
-    }
-    // Verify token
     try {
-      $decodedToken = verifyToken($token);
-      $user_id = $decodedToken->user_id; // Use object property access
+      $token = basename($_SERVER['REQUEST_URI']);
 
+      // Check if token is missing
+      if (!$token) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Token is missing']);
+        return;
+      }
+      // Verify token
+      try {
+        $decodedToken = verifyToken($token);
+        $user_id = $decodedToken->user_id; // Use object property access
+
+      } catch (Exception $e) {
+        http_response_code(401); // Unauthorized
+        echo json_encode(['error' => 'Invalid or expired token', 'message' => $e->getMessage()]);
+        return;
+      }
+
+      $userModel = new UserModel($pdo);
+      $verificationResult = $userModel->verifyEmail($token, $user_id); // Pass the user_id
+
+      if ($verificationResult['status'] === 'success') {
+        // Email verified successfully
+        http_response_code(200);
+        echo json_encode(['message' => 'Email verified successfully']);
+      } else {
+        // Email verification failed (e.g., token expired or already used)
+        http_response_code(400);
+        echo json_encode(['error' => $verificationResult['message']]);
+      }
+    } catch (PDOException $e) {
+      // Handle database-related errors
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     } catch (Exception $e) {
-      http_response_code(401); // Unauthorized
-      echo json_encode(['error' => 'Invalid or expired token', 'message' => $e->getMessage()]);
-      return;
-    }
-
-    $userModel = new UserModel($pdo);
-    $verificationResult = $userModel->verifyEmail($token, $user_id); // Pass the user_id
-
-    if ($verificationResult['status'] === 'success') {
-      // Email verified successfully
-      http_response_code(200);
-      echo json_encode(['message' => 'Email verified successfully']);
-    } else {
-      // Email verification failed (e.g., token expired or already used)
-      http_response_code(400);
-      echo json_encode(['error' => $verificationResult['message']]);
+      http_response_code(500); // Internal Server Error
+      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
     }
   } else {
     // Invalid request method
