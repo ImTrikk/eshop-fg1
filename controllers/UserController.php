@@ -16,6 +16,25 @@ function addAddress($pdo)
  }
 }
 
+function updateProfileRequest($pdo)
+{
+ if ($_SERVER['REQUEST_METHOD'] === "POST") {
+  $jsonData = file_get_contents(filename: "php://input");
+  $data = json_decode($jsonData, true);
+
+  $email = $data['email'];
+  $error = validateEmail($email);
+
+  if (!empty($error)) {
+   http_response_code(400);
+   echo json_encode(["errors" => $error]);
+   return;
+  }
+
+  sendOtp($email);
+ }
+}
+
 function updateProfile($user_id, $pdo)
 {
  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -34,7 +53,7 @@ function updateProfile($user_id, $pdo)
     'first_name' => $firstName,
     'last_name' => $lastName,
     'contacts' => $contacts,
-    'email' => $email
+    'email' => $email,
    ];
 
    // validate

@@ -24,7 +24,7 @@ function authRoutes($router, $pdo)
 
     $router->post('/auth/logout/{id}', function ($id) use ($pdo) {
         authorize(['Admin', 'Buyer', 'Seller'], $_REQUEST, function ($id) use ($pdo) {
-            logout($id, $pdo);
+            logout();
         });
     });
 

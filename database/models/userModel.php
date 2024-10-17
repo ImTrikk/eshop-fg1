@@ -331,6 +331,7 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // fix invalidating token for logout
     public function invalidateToken($userId)
     {
         // Assuming you have a tokens table to store the tokens

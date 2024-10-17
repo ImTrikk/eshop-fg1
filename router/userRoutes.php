@@ -35,7 +35,6 @@ function userRoutes($router, $pdo)
         });
     });
 
-    // request first
     $router->post('/user/profile/update/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {
             authorize(['Admin', 'Seller', 'Buyer'], $request, function ($request) use ($pdo, $id) {
@@ -44,5 +43,5 @@ function userRoutes($router, $pdo)
                 });
             });
         });
-    }); 
+    });
 }

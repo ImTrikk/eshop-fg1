@@ -169,7 +169,8 @@ function validateEmail($email)
 }
 
 
-function validateUpdateProfile($data){
+function validateUpdateProfile($data)
+{
 
   $errors = [];
 
@@ -179,7 +180,6 @@ function validateUpdateProfile($data){
   } elseif (!preg_match("/^[a-zA-Z '-]+$/", $data['first_name'])) {
     $errors[] = 'First name can only contain letters, apostrophes, and hyphens.';
   }
-
   // Validate last name
   if (empty($data['last_name'])) {
     $errors[] = 'Last name is required.';
