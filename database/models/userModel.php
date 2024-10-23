@@ -124,7 +124,6 @@ class UserModel
         }
     }
 
-
     public function verifyEmail($token, $user_id)
     {
         // Update the user's record in the database to verify email
@@ -286,7 +285,7 @@ class UserModel
                 // If a token of the specified type already exists, update it
                 $sqlUpdate = "UPDATE user_tokens 
                           SET token = :token, issued_at = :issued_at, expires_at = :expires_at, 
-                              is_valid = :is_valid, email_verified = :email_verified
+                             email_verified = :email_verified
                           WHERE user_id = :user_id AND token_type = :token_type";
 
                 $stmtUpdate = $this->pdo->prepare($sqlUpdate);
@@ -295,14 +294,12 @@ class UserModel
                     ':token' => $token,
                     ':token_type' => $token_type, // Keep the token type as it is (JWT or EMAIL_VERIFICATION)
                     ':issued_at' => date('Y-m-d H:i:s'),
-                    ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
-                    ':is_valid' => 1,
-                    ':email_verified' => ($token_type === 'EMAIL_VERIFICATION') ? 0 : 1 // Set based on token type
+                    ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours'))
                 ]);
             } else {
                 // If no token of this type exists, insert a new one
-                $sqlInsert = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at, is_valid, email_verified) 
-                          VALUES (:user_id, :token, :token_type, :issued_at, :expires_at, :is_valid, :email_verified)";
+                $sqlInsert = "INSERT INTO user_tokens (user_id, token, token_type, issued_at, expires_at) 
+                          VALUES (:user_id, :token, :token_type, :issued_at, :expires_at)";
 
                 $stmtInsert = $this->pdo->prepare($sqlInsert);
                 $stmtInsert->execute([
@@ -310,9 +307,7 @@ class UserModel
                     ':token' => $token,
                     ':token_type' => $token_type, // Use the provided token type (JWT or EMAIL_VERIFICATION)
                     ':issued_at' => date('Y-m-d H:i:s'),
-                    ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours')),
-                    ':is_valid' => 1,
-                    ':email_verified' => ($token_type === 'EMAIL_VERIFICATION') ? 0 : 1 // Set based on token type
+                    ':expires_at' => date('Y-m-d H:i:s', strtotime('+3 hours'))
                 ]);
             }
         } catch (PDOException $e) {
@@ -331,7 +326,7 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // fix invalidating token for logout
+    // todo fix invalidating token for logout
     public function invalidateToken($userId)
     {
         // Assuming you have a tokens table to store the tokens
