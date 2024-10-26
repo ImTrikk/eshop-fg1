@@ -36,11 +36,42 @@ class Database
             // Create PDO instance
             $this->pdo = new PDO($dsn, $username, null, $options); // Use null for password
             echo "Database connection successful!";
+
+            // Apply rate limiting
+            $this->rateLimit();
         } catch (PDOException $e) {
             // Catch and display any connection errors
             echo "Database connection failed: " . $e->getMessage();
         }
 
         return $this->pdo;
+    }
+
+    private function rateLimit()
+    {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $current_time = time();
+        $time_frame = 60; // 1 minute
+        $max_requests = 100; // Max requests allowed
+
+        // Create table if it doesn't exist
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS request_logs (ip VARCHAR(45), timestamp INT)");
+
+        // Remove old requests
+        $this->pdo->prepare("DELETE FROM request_logs WHERE timestamp < :time")->execute(['time' => $current_time - $time_frame]);
+
+        // Log the current request
+        $this->pdo->prepare("INSERT INTO request_logs (ip, timestamp) VALUES (:ip, :time)")->execute(['ip' => $ip, 'time' => $current_time]);
+
+        // Count requests from this IP
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM request_logs WHERE ip = :ip");
+        $stmt->execute(['ip' => $ip]);
+        $request_count = $stmt->fetchColumn();
+
+        if ($request_count > $max_requests) {
+            http_response_code(429); // Too Many Requests
+            echo json_encode(['error' => 'Too many requests. Please try again later.']);
+            exit();
+        }
     }
 }

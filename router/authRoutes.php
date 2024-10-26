@@ -39,23 +39,7 @@ function authRoutes($router, $pdo)
 
     $router->get('/auth/verify-email/{token:[a-zA-Z0-9-_\.]+}', function ($token) use ($pdo) {
         verifyUser($token, $pdo, );
-    });
-
-    $router->post('/auth/role/assign', function () use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo) {
-            authorize('Admin', $request, function ($request) use ($pdo) {
-                assignRole($pdo);
-            });
-        });
-    });
-
-    $router->post('/auth/role/revoke', function () use ($pdo) {
-        authenticate($_REQUEST, function ($request) use ($pdo) {
-            authorize('Admin', $request, function ($request) use ($pdo) {
-                revokeRole($pdo);
-            });
-        });
-    });
+    });    
 }
 
 

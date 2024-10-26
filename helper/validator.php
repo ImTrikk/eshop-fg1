@@ -87,11 +87,11 @@ function validateRole($data)
   }
 
   // Validate role
-  $validRoles = ['Seller', 'Buyer'];
+  $validRoles = ['1', '2'];
   if (empty($data['role'])) {
     $errors['role'] = 'Role is required.';
   } elseif (!in_array($data['role'], $validRoles)) {
-    $errors['role'] = 'Role must be either "Seller" or "Buyer".';
+    $errors['role'] = 'Role must be either "Seller[2]" or "Buyer[1]".';
   }
 
   return $errors;

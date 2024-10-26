@@ -91,7 +91,7 @@ class UserModel
         }
     }
 
-    // work on here
+    // todod work on here
     public function updateProfile($data, $user_id)
     {
         try {
@@ -168,64 +168,6 @@ class UserModel
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function addAdress($user_id, $shipping_address)
-    {
-        $sql = 'INSERT into orders (shipping_addres) VALUES (:shipping_address) ';
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['shipping_address' => $shipping_address]);
-
-    }
-
-    public function assignUserRole($email, $role_id)
-    {
-        // Update the user's role_id based on their email in the users table
-        $sql = "UPDATE users SET role_id = :role_id WHERE email = :email";
-        $stmt = $this->pdo->prepare($sql);
-
-        // Bind parameters
-        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-        $stmt->bindParam(':role_id', $role_id, PDO::PARAM_INT);
-
-        // Execute the update statement
-        $stmt->execute();
-
-        // Check if any rows were updated
-        if ($stmt->rowCount() === 0) {
-            return false;
-        }
-
-        // Fetch and return the updated user data
-        $sql = "SELECT u.user_id, CONCAT(first_name, ' ', last_name) AS name, u.email, r.role_name 
-            FROM users u
-            INNER JOIN roles r ON u.role_id = r.role_id
-            WHERE u.email = :email";
-        $stmt = $this->pdo->prepare($sql);
-
-        // Bind the email parameter for the select statement
-        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-
-        // Execute the select statement
-        $stmt->execute();
-
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function revokeUserRole($email, $role)
-    {
-        // Update the user's role
-        $sql = "UPDATE users SET role_id = :role_id WHERE email = :email";
-        $stmt = $this->pdo->prepare($sql);
-
-        // Bind parameters
-        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-        $stmt->bindParam(':role_id', $role, PDO::PARAM_INT);
-
-        // Execute the update statement
-        $stmt->execute();
-
-        // Return whether any rows were affected
-        return $stmt->rowCount() > 0;
-    }
 
     public function getUserProfile($user_id)
     {
@@ -284,8 +226,7 @@ class UserModel
             if ($existingToken) {
                 // If a token of the specified type already exists, update it
                 $sqlUpdate = "UPDATE user_tokens 
-                          SET token = :token, issued_at = :issued_at, expires_at = :expires_at, 
-                             email_verified = :email_verified
+                          SET token = :token, issued_at = :issued_at, expires_at = :expires_at
                           WHERE user_id = :user_id AND token_type = :token_type";
 
                 $stmtUpdate = $this->pdo->prepare($sqlUpdate);
@@ -316,7 +257,6 @@ class UserModel
             throw $e;
         }
     }
-
 
     public function logoutModel($user_id)
     {

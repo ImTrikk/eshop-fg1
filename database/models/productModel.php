@@ -7,6 +7,7 @@ class ProductModel {
   $this->pdo = $pdo;
  }
 
+ //gets the cart for users
  public function getUserCart($user_id) {
   $sql = "SELECT * FROM cart WHERE user_id = :user_id";
   $stmt = $this->pdo->prepare($sql);
