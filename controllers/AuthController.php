@@ -380,7 +380,7 @@ function verifyUser($token, $pdo)
 }
 
 // todo verify this later 
-function logout()
+function logout($user_id, $pdo)
 {
   // Check if the request method is POST
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -392,6 +392,10 @@ function logout()
       // Expire the cookie
       setcookie('access_token', '', time() - 3600, '/'); // Set expiration in the past
     }
+
+    // todo delete token in database
+
+
 
     // Clear any session data if applicable
     unset($_SESSION['user_id']); // Remove user ID from session

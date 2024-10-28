@@ -24,7 +24,7 @@ function authRoutes($router, $pdo)
 
     $router->post('/auth/logout/{id}', function ($id) use ($pdo) {
         authorize(['Admin', 'Buyer', 'Seller'], $_REQUEST, function ($id) use ($pdo) {
-            logout();
+            logout($id, $pdo);
         });
     });
 
@@ -39,7 +39,7 @@ function authRoutes($router, $pdo)
 
     $router->get('/auth/verify-email/{token:[a-zA-Z0-9-_\.]+}', function ($token) use ($pdo) {
         verifyUser($token, $pdo, );
-    });    
+    });
 }
 
 
