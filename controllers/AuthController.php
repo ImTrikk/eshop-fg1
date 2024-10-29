@@ -131,7 +131,7 @@ function login($pdo)
 
       // Verify password
       // if ($user && password_verify($password, $user['password'])) {
-        if($user){
+      if ($user) {
         // Fetch additional user data (excluding the password)
         $userData = $userModel->getUserData($email);
 
@@ -393,17 +393,22 @@ function logout($user_id, $pdo)
       setcookie('access_token', '', time() - 3600, '/'); // Set expiration in the past
     }
 
-    // todo delete token in database
-
-
+    $userModel = new UserModel($pdo);
+    $logoutSuccess = $userModel->logoutModel($user_id); // Check if logout was successful
 
     // Clear any session data if applicable
     unset($_SESSION['user_id']); // Remove user ID from session
     session_destroy(); // Destroy the session
 
-    // Return success response
-    http_response_code(200); // OK
-    echo json_encode(["message" => "Logout successful!"]);
+    if ($logoutSuccess) {
+      // Return success response
+      http_response_code(200); // OK
+      echo json_encode(["message" => "Logout successful!"]);
+    } else {
+      // Return error response if logout failed
+      http_response_code(500); // Internal Server Error
+      echo json_encode(["error" => "Logout failed. Please try again."]);
+    }
   } else {
     http_response_code(405); // Method Not Allowed
     echo json_encode(["error" => "Invalid request method!"]);

@@ -260,10 +260,15 @@ class UserModel
 
     public function logoutModel($user_id)
     {
-        $sql = 'DELETE * from tokens where user_id = :user_id';
+        // Corrected SQL statement to use DELETE without the asterisk
+        $sql = 'DELETE FROM user_tokens WHERE user_id = :user_id'; // Fixed SQL syntax
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $user_id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Bind the correct parameter
+        $stmt->execute([':user_id' => $user_id]);
+
+        // Return success status instead of fetching data
+        return $stmt->rowCount() > 0; // Return true if a row was deleted
     }
 
     // todo fix invalidating token for logout
