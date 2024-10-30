@@ -7,12 +7,17 @@ require_once(__DIR__ . '/../database/models/adminModels.php');
 function getAllUsers($pdo)
 {
  if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+  // Get pagination parameters from the request
+  $limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 10; // Default to 10 users per page
+  $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1; // Default to page 1
+  $offset = ($page - 1) * $limit; // Calculate the offset
+
   $adminModel = new AdminModels($pdo);
-  $users = $adminModel->getAllUsers($pdo);
+  $users = $adminModel->getAllUsers($pdo, $limit, $offset); // Pass limit and offset
   
   http_response_code(200);
   echo json_encode([
-   "message" => "Login successful!",
+   "message" => "Users retrieved successfully!",
    "users" => $users,
   ]);
  }

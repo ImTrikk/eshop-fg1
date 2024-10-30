@@ -180,32 +180,6 @@ function login($pdo)
   }
 }
 
-function userProfile($pdo, $user_id)
-{
-  if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    try {
-      $userModel = new UserModel($pdo);
-      $user_profile = $userModel->getUserProfile($user_id);
-
-      if ($user_profile === null) {
-        http_response_code(404); // Not Found
-        echo json_encode(['error' => 'User profile not found']);
-        return;
-      }
-
-      http_response_code(200);
-      echo json_encode(['message' => 'Retrieved user profile', 'User' => $user_profile]);
-    } catch (PDOException $e) {
-      // Handle database-related errors
-      http_response_code(500); // Internal Server Error
-      echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
-    } catch (Exception $e) {
-      http_response_code(500); // Internal Server Error
-      echo json_encode(['error' => 'An unexpected error occurred: ' . $e->getMessage()]);
-    }
-  }
-}
-
 
 function passwordResetRequest()
 {
@@ -379,7 +353,6 @@ function verifyUser($token, $pdo)
   }
 }
 
-// todo verify this later 
 function logout($user_id, $pdo)
 {
   // Check if the request method is POST

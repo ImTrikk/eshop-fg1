@@ -30,7 +30,6 @@ function authRoutes($router, $pdo)
         });
     });
 
-    // ====================== AUTHORIZATION ==================== //
     $router->post('/auth/verify/request/{id}', function ($id) use ($pdo) {
         authenticate($_REQUEST, function ($request) use ($pdo, $id) {
             authorize('Seller', $request, function ($request) use ($id, $pdo) {

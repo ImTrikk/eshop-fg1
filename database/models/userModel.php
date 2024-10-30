@@ -91,7 +91,7 @@ class UserModel
         }
     }
 
-    // todod work on here
+
     public function updateProfile($data, $user_id)
     {
         try {
