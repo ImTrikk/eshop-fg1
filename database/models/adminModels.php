@@ -63,21 +63,31 @@ public function assignUserRole($email, $role_id)
      return $stmt->rowCount() > 0;
  }
 
- public function getAllUsers($pdo, $limit, $offset)
- {
-  // Updated SQL query to include email, contact, and role_name with pagination
-  $sql = "SELECT u.first_name, u.last_name, u.email, u.contacts, r.role_name 
-          FROM users u
-          INNER JOIN roles r ON u.role_id = r.role_id
-          LIMIT :limit OFFSET :offset"; // Added LIMIT and OFFSET
-          
-  $stmt = $this->pdo->prepare($sql);
-  
-  // Bind parameters for limit and offset
-  $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-  $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-  
-  $stmt->execute();
-  return $stmt->fetchAll(PDO::FETCH_ASSOC); // Return the user data with additional fields
- }
+    public function getAllUsers($pdo, $limit, $offset)
+    {
+        // Updated SQL query to include email, contact, and role_name with pagination
+        $sql = "SELECT u.first_name, u.last_name, u.email, u.contacts, r.role_name 
+            FROM users u
+            INNER JOIN roles r ON u.role_id = r.role_id
+            LIMIT :limit OFFSET :offset"; // Added LIMIT and OFFSET
+
+        $stmt = $pdo->prepare($sql);
+
+        // Ensure limit and offset are integers and bind them
+        $limit = (int) $limit;
+        $offset = (int) $offset;
+
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+        try {
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC); // Return the user data with additional fields
+        } catch (PDOException $e) {
+            // Log the error or handle it as appropriate
+            error_log("Error fetching users: " . $e->getMessage());
+            return []; // Return an empty array on failure
+        }
+    }
+
 }
