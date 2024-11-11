@@ -130,8 +130,8 @@ function login($pdo)
       }
 
       // Verify password
-      // if ($user && password_verify($password, $user['password'])) {
-      if ($user) {
+      if ($user && password_verify($password, $user['password'])) {
+      // if ($user) {
         // Fetch additional user data (excluding the password)
         $userData = $userModel->getUserData($email);
 
